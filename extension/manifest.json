@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "zipCheats Extractor",
+  "version": "1.0.0",
+  "description": "Extracts LinkedIn games puzzle data and sends it to the local dev app",
+  "content_scripts": [
+    {
+      "matches": ["https://www.linkedin.com/games/*"],
+      "js": [
+        "content/games/zip/ZipWalls.js",
+        "content/games/zip/ZipExtractor.js",
+        "content/GameRegistry.js",
+        "content/main.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "host_permissions": [
+    "https://www.linkedin.com/*",
+    "http://localhost/*"
+  ],
+  "permissions": ["declarativeNetRequest"]
+}
