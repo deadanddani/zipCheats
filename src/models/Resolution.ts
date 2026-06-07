@@ -27,7 +27,10 @@ export class Resolution {
   }
 
   reset() {
-    for (const cell of this.path) cell.visited = false;
+    for (const cell of this.map.cells) {
+      cell.visited = false;
+      cell.validMoves = undefined;
+    }
     this.path = [];
     this.onChange?.();
   }
