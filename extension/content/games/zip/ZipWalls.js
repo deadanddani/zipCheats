@@ -9,12 +9,10 @@ const ZipWalls = {
       const bb = parseFloat(after.borderBottomWidth) || 0
       const bl = parseFloat(after.borderLeftWidth) || 0
 
-      if (br > 2) walls.right = true
-      if (bl > 2) walls.left  = true
-      if (bt > 2 || bb > 2) {
-        if (b.classList.contains('_39e44d65')) walls.bottom = true
-        else walls.top = true
-      }
+      if (br > 2) walls.right  = true
+      if (bl > 2) walls.left   = true
+      if (bt > 2) walls.top    = true
+      if (bb > 2) walls.bottom = true
     }
 
     return walls

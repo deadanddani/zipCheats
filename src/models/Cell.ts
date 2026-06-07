@@ -1,7 +1,14 @@
+export interface Move {
+  cell: Cell
+  visited: boolean
+}
+
 export interface Cell {
   row: number
   col: number
   value: number | null
+  visited: boolean
+  validMoves?: Move[]
   walls: {
     top: boolean
     right: boolean
@@ -18,15 +25,8 @@ export function createGrid(rows: number, cols: number): Grid {
       row,
       col,
       value: null,
+      visited: false,
       walls: { top: false, right: false, bottom: false, left: false },
     }))
   )
-}
-
-export function addWall(grid: Grid, r: number, c: number, side: 'top' | 'right' | 'bottom' | 'left') {
-  grid[r][c].walls[side] = true
-  if (side === 'right'  && c + 1 < grid[0].length) grid[r][c + 1].walls.left   = true
-  if (side === 'left'   && c - 1 >= 0)             grid[r][c - 1].walls.right  = true
-  if (side === 'bottom' && r + 1 < grid.length)    grid[r + 1][c].walls.top    = true
-  if (side === 'top'    && r - 1 >= 0)             grid[r - 1][c].walls.bottom = true
 }

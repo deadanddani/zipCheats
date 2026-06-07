@@ -51,6 +51,42 @@ body {
   color: #111318;
 }
 
+.test-map-btn {
+  padding: 0.6rem 1.5rem;
+  background: transparent;
+  color: #34d399;
+  border: 1.5px solid #34d399;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  letter-spacing: 0.01em;
+}
+
+.test-map-btn:hover {
+  background: #34d399;
+  color: #111318;
+}
+
+.solve-btn {
+  padding: 0.6rem 1.5rem;
+  background: transparent;
+  color: #fbbf24;
+  border: 1.5px solid #fbbf24;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  letter-spacing: 0.01em;
+}
+
+.solve-btn:hover {
+  background: #fbbf24;
+  color: #111318;
+}
+
 .clear-btn {
   padding: 0.4rem 1rem;
   background: transparent;
