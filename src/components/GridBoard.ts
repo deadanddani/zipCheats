@@ -29,8 +29,9 @@ function isWallBetween(a: Cell, b: Cell): boolean {
 // only one board solves at a time, so a previous listener can be torn down unconditionally
 let detachPreviousDrag: (() => void) | null = null
 
-export function renderGrid(map: ZipMap, resolution: Resolution): HTMLElement {
-  detachPreviousDrag?.()
+export function renderGrid(map: ZipMap, resolution: Resolution, options?: { interactive?: boolean }): HTMLElement {
+  const interactive = options?.interactive ?? true
+  if (interactive) detachPreviousDrag?.()
 
   const { rows, cols } = map
 
@@ -132,20 +133,32 @@ export function renderGrid(map: ZipMap, resolution: Resolution): HTMLElement {
         el.appendChild(num)
       }
 
-      el.addEventListener('mousedown', (e) => {
-        e.preventDefault()
-        if (cell.value !== 1) return
-        resolution.reset()
-        resolution.addStep(cell)
-        dragging = true
-        render()
-      })
+      if (interactive) {
+        el.addEventListener('mousedown', (e) => {
+          e.preventDefault()
+          const { path } = resolution
+          const pathIndex = path.findIndex(({ row, col }) => row === cell.row && col === cell.col)
 
-      el.addEventListener('mouseenter', () => {
-        if (!dragging) return
-        tryStep(cell)
-        render()
-      })
+          if (pathIndex !== -1) {
+            while (resolution.path.length - 1 > pathIndex) resolution.backStep()
+            dragging = true
+            render()
+            return
+          }
+
+          if (cell.value !== 1) return
+          resolution.reset()
+          resolution.addStep(cell)
+          dragging = true
+          render()
+        })
+
+        el.addEventListener('mouseenter', () => {
+          if (!dragging) return
+          tryStep(cell)
+          render()
+        })
+      }
 
       cellEls[r][c] = el
       board.appendChild(el)
@@ -156,12 +169,14 @@ export function renderGrid(map: ZipMap, resolution: Resolution): HTMLElement {
     dragging = false
   }
 
-  document.addEventListener('mouseup', stopDragging)
   resolution.onChange = render
 
-  detachPreviousDrag = () => {
-    document.removeEventListener('mouseup', stopDragging)
-    resolution.onChange = undefined
+  if (interactive) {
+    document.addEventListener('mouseup', stopDragging)
+    detachPreviousDrag = () => {
+      document.removeEventListener('mouseup', stopDragging)
+      resolution.onChange = undefined
+    }
   }
 
   render()

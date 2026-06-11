@@ -51,6 +51,23 @@ body {
   color: #111318;
 }
 
+.linkedin-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.linkedin-btn--secondary {
+  color: #34d399;
+  border-color: #34d399;
+}
+
+.linkedin-btn--secondary:hover {
+  background: #34d399;
+  color: #111318;
+}
+
 .test-map-btn {
   padding: 0.6rem 1.5rem;
   background: transparent;
@@ -67,6 +84,46 @@ body {
 .test-map-btn:hover {
   background: #34d399;
   color: #111318;
+}
+
+.delete-map-btn {
+  padding: 0.6rem 1.5rem;
+  background: transparent;
+  color: #f87171;
+  border: 1.5px solid #f87171;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  letter-spacing: 0.01em;
+}
+
+.delete-map-btn:hover {
+  background: #f87171;
+  color: #111318;
+}
+
+.sample-map-select {
+  padding: 0.55rem 0.9rem;
+  background: #1a1d24;
+  color: #e5e7eb;
+  border: 1.5px solid #34d399;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.map-browser {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.solve-method-select {
+  margin: 0 0.6rem;
 }
 
 .solve-btn {
@@ -87,7 +144,14 @@ body {
   color: #111318;
 }
 
-.clear-btn {
+.solve-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+  background: transparent;
+  color: #fbbf24;
+}
+
+.home-btn {
   padding: 0.4rem 1rem;
   background: transparent;
   color: #6b7280;
@@ -98,9 +162,9 @@ body {
   transition: color 0.15s, border-color 0.15s;
 }
 
-.clear-btn:hover {
-  color: #f87171;
-  border-color: #f87171;
+.home-btn:hover {
+  color: #34d399;
+  border-color: #34d399;
 }
 
 /* ── Header ── */
@@ -124,5 +188,48 @@ body {
   color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+.puzzle-date-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.puzzle-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  border: 1.5px solid #2a2e37;
+  background: #1a1d24;
+  color: #4b5563;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: default;
+  visibility: hidden;
+  filter: grayscale(1);
+  opacity: 0.5;
+  transition: border-color 0.2s, color 0.2s, filter 0.2s, opacity 0.2s, box-shadow 0.2s;
+}
+
+.puzzle-indicator__icon {
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.puzzle-date-row--active .puzzle-indicator {
+  visibility: visible;
+}
+
+.puzzle-indicator--on {
+  border-color: #34d399;
+  color: #34d399;
+  filter: grayscale(0);
+  opacity: 1;
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.35);
 }
 

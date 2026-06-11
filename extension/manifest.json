@@ -9,12 +9,26 @@
       "js": [
         "content/games/zip/ZipWalls.js",
         "content/games/zip/ZipExtractor.js",
+        "content/games/zip/model/Map.js",
+        "content/games/zip/model/Resolution.js",
+        "content/games/zip/solver/BranchAndBoundMethod.js",
+        "content/games/zip/solver/Solver.js",
+        "content/games/zip/ZipSolver.js",
+        "content/games/zip/ZipPlayer.js",
+        "content/Settings.js",
+        "content/Banner.js",
+        "content/Toast.js",
         "content/GameRegistry.js",
         "content/main.js"
       ],
+      "css": ["content/Banner.css", "content/Toast.css"],
       "run_at": "document_idle"
     }
   ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "zipCheats"
+  },
   "background": {
     "service_worker": "background.js"
   },
@@ -22,5 +36,5 @@
     "https://www.linkedin.com/*",
     "http://localhost/*"
   ],
-  "permissions": ["declarativeNetRequest"]
+  "permissions": ["declarativeNetRequest", "tabs", "storage"]
 }

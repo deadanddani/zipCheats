@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="header">
+      <h1>zipCheats</h1>
+    </header>
+
+    <section class="actions">
+      <button id="go" type="button" class="btn btn--primary">Ir al juego</button>
+      <button id="solve" type="button" class="btn">Resolver ahora</button>
+    </section>
+
+    <label class="toggle">
+      <input id="completeMap" type="checkbox" />
+      <span>Completar mapa</span>
+      <small>Si está desactivado, se queda a un paso del final (para probar).</small>
+    </label>
+
+    <section class="preview">
+      <div class="preview__head">
+        <span>Mapa cargado</span>
+        <span id="dims" class="preview__dims"></span>
+      </div>
+      <div id="board" class="board"></div>
+      <p id="status" class="status"></p>
+    </section>
+
+    <script src="../content/Settings.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -1,14 +1,14 @@
 .grid-board {
   display: grid;
-  grid-template-columns: repeat(var(--cols), 72px);
+  grid-template-columns: repeat(var(--cols), var(--cell-size, 72px));
   border: 3px solid #e8e0d4;
   border-radius: 6px;
   overflow: hidden;
 }
 
 .grid-cell {
-  width: 72px;
-  height: 72px;
+  width: var(--cell-size, 72px);
+  height: var(--cell-size, 72px);
   background: #faf7f2;
   display: flex;
   align-items: center;
@@ -57,7 +57,7 @@
 .path-seg--top,
 .path-seg--bottom {
   left: 50%;
-  width: 16px;
+  width: calc(var(--cell-size, 72px) * 0.22);
   height: calc(50% + 1px);
   transform: translateX(-50%);
 }
@@ -67,7 +67,7 @@
 .path-seg--left,
 .path-seg--right {
   top: 50%;
-  height: 16px;
+  height: calc(var(--cell-size, 72px) * 0.22);
   width: calc(50% + 1px);
   transform: translateY(-50%);
 }
@@ -78,8 +78,8 @@
   position: absolute;
   inset: 0;
   margin: auto;
-  width: 16px;
-  height: 16px;
+  width: calc(var(--cell-size, 72px) * 0.22);
+  height: calc(var(--cell-size, 72px) * 0.22);
   border-radius: 50%;
   background: #34d399;
 }
@@ -94,8 +94,8 @@
   position: absolute;
   inset: 0;
   margin: auto;
-  width: 26px;
-  height: 26px;
+  width: calc(var(--cell-size, 72px) * 0.36);
+  height: calc(var(--cell-size, 72px) * 0.36);
   border-radius: 50%;
   border: 3px solid #10b981;
   z-index: 2;
@@ -104,12 +104,12 @@
 .cell-value {
   position: relative;
   z-index: 2;
-  width: 36px;
-  height: 36px;
+  width: calc(var(--cell-size, 72px) * 0.5);
+  height: calc(var(--cell-size, 72px) * 0.5);
   border-radius: 50%;
   background: #2d2a26;
   color: #faf7f2;
-  font-size: 1.1rem;
+  font-size: calc(var(--cell-size, 72px) * 0.24);
   font-weight: 700;
   display: flex;
   align-items: center;

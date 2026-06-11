@@ -8,7 +8,7 @@ export default defineConfig({
     {
       name: 'zip-api',
       configureServer(server) {
-        server.middlewares.use('/api/zip/map', (req, res) => zipMapApi.handle(req, res))
+        server.middlewares.use('/api/zip', (req, res) => zipMapApi.handle(req, res))
       },
     },
   ],

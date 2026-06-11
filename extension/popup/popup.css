@@ -1,0 +1,123 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  width: 320px;
+  margin: 0;
+  padding: 14px;
+  background: #1d2226;
+  color: #e9eef2;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+
+.header h1 {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.btn {
+  flex: 1;
+  padding: 8px 10px;
+  background: #2a343d;
+  color: #e9eef2;
+  border: 1px solid #38434f;
+  border-radius: 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: #323e48;
+}
+
+.btn--primary {
+  background: #0a66c2;
+  border-color: #0a66c2;
+  color: #fff;
+}
+
+.btn--primary:hover {
+  background: #004182;
+}
+
+.toggle {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 4px 8px;
+  margin-bottom: 14px;
+  cursor: pointer;
+}
+
+.toggle input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.toggle span {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.toggle small {
+  grid-column: 2;
+  color: #9aa6b2;
+  font-size: 11px;
+}
+
+.preview__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: #9aa6b2;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.preview__dims {
+  font-variant-numeric: tabular-nums;
+}
+
+.board {
+  display: grid;
+  gap: 0;
+  background: #38434f;
+  border: 2px solid #6b7785;
+  border-radius: 4px;
+  overflow: hidden;
+  aspect-ratio: 1;
+}
+
+.board__cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #11161a;
+  color: #e9eef2;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  /* default hairline grid line between cells */
+  border: 0.5px solid #2a343d;
+  /* walls are drawn by overriding these per-cell in JS */
+  box-shadow: none;
+}
+
+.status {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #9aa6b2;
+  min-height: 1em;
+}

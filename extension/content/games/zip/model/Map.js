@@ -1,21 +1,18 @@
-import type { Cell, Move } from "./Cell";
+// The Zip board model. A "Cell" is a plain object:
+// { row, col, value, visited, validMoves?, walls }.
 
-const opposite = { top: "bottom", right: "left", bottom: "top", left: "right" } as const;
-const offset = { top: [-1, 0], right: [0, 1], bottom: [1, 0], left: [0, -1] } as const;
+const ZIP_OPPOSITE = { top: 'bottom', right: 'left', bottom: 'top', left: 'right' };
+const ZIP_OFFSET = { top: [-1, 0], right: [0, 1], bottom: [1, 0], left: [0, -1] };
 
-export class ZipMap {
-  rows: number;
-  cols: number;
-  cells: Cell[];
-
-  constructor(rows: number, cols: number, cells?: Cell[]) {
+class ZipMap {
+  constructor(rows, cols, cells) {
     this.rows = rows;
     this.cols = cols;
     this.cells = cells ?? ZipMap.emptyCells(rows, cols);
   }
 
-  private static emptyCells(rows: number, cols: number): Cell[] {
-    const cells: Cell[] = [];
+  static emptyCells(rows, cols) {
+    const cells = [];
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
         cells.push({ row, col, value: null, visited: false, walls: { top: false, right: false, bottom: false, left: false } });
@@ -24,44 +21,44 @@ export class ZipMap {
     return cells;
   }
 
-  static fromGrid(grid: Cell[][]): ZipMap {
+  static fromGrid(grid) {
     return new ZipMap(grid.length, grid[0]?.length ?? 0, grid.flat());
   }
 
-  cellAt(row: number, col: number): Cell | undefined {
+  cellAt(row, col) {
     return this.cells.find((cell) => cell.row === row && cell.col === col);
   }
 
-  getFirstCell(): Cell | undefined {
+  getFirstCell() {
     return this.cells.find((cell) => cell.value === 1);
   }
 
-  getNode(value: number): Cell | undefined {
+  getNode(value) {
     return this.cells.find((cell) => cell.value === value);
   }
 
-  getLastVisitedNode(): Cell | undefined {
-    //get the visited cell with the highest value from the map
-    let lastNode: Cell | undefined = undefined;
+  getLastVisitedNode() {
+    // get the visited cell with the highest value from the map
+    let lastNode = undefined;
     for (const cell of this.cells) {
-      if (cell.visited && cell.value !== null && (lastNode === undefined || cell.value > lastNode.value!)) {
+      if (cell.visited && cell.value !== null && (lastNode === undefined || cell.value > lastNode.value)) {
         lastNode = cell;
       }
     }
     return lastNode;
   }
 
-  addWall(row: number, col: number, side: keyof typeof opposite) {
+  addWall(row, col, side) {
     const cell = this.cellAt(row, col);
     if (!cell) return;
     cell.walls[side] = true;
 
-    const [dr, dc] = offset[side];
+    const [dr, dc] = ZIP_OFFSET[side];
     const neighbor = this.cellAt(row + dr, col + dc);
-    if (neighbor) neighbor.walls[opposite[side]] = true;
+    if (neighbor) neighbor.walls[ZIP_OPPOSITE[side]] = true;
   }
 
-  isValidMove(a: Cell, b: Cell): boolean {
+  isValidMove(a, b) {
     const dr = b.row - a.row;
     const dc = b.col - a.col;
     if (Math.abs(dr) + Math.abs(dc) !== 1) return false;
@@ -73,7 +70,7 @@ export class ZipMap {
     return true;
   }
 
-  populateValidMoves(cell: Cell): void {
+  populateValidMoves(cell) {
     if (cell.validMoves !== undefined) return;
 
     const neighbors = this.getNeighbors(cell).filter((neighbor) => this.isValidMove(cell, neighbor));
@@ -81,33 +78,33 @@ export class ZipMap {
     cell.validMoves = neighbors.map((neighbor) => ({ cell: neighbor, visited: neighbor.visited }));
   }
 
-  hasWallBetween(a: Cell, b: Cell): boolean {
+  hasWallBetween(a, b) {
     const dr = b.row - a.row;
     const dc = b.col - a.col;
-    const side: keyof typeof opposite = dr === -1 ? "top" : dr === 1 ? "bottom" : dc === -1 ? "left" : "right";
-    return a.walls[side] || b.walls[opposite[side]];
+    const side = dr === -1 ? 'top' : dr === 1 ? 'bottom' : dc === -1 ? 'left' : 'right';
+    return a.walls[side] || b.walls[ZIP_OPPOSITE[side]];
   }
 
-  getNeighbors(cell: Cell): Cell[] {
-    return (Object.keys(offset) as (keyof typeof offset)[])
+  getNeighbors(cell) {
+    return Object.keys(ZIP_OFFSET)
       .map((side) => {
-        const [dr, dc] = offset[side];
+        const [dr, dc] = ZIP_OFFSET[side];
         return this.cellAt(cell.row + dr, cell.col + dc);
       })
-      .filter((neighbor): neighbor is Cell => neighbor !== undefined);
+      .filter((neighbor) => neighbor !== undefined);
   }
 
-  isSolvable(): boolean {
-    const nonVisitedCells: Cell[] = this.cells.filter((cell) => !cell.visited);
+  isSolvable() {
+    const nonVisitedCells = this.cells.filter((cell) => !cell.visited);
     if (nonVisitedCells.length === 0) return true;
 
-    const joinedCells: Cell[] = [];
+    const joinedCells = [];
     this.getCellGroup(nonVisitedCells[0], joinedCells);
 
     return joinedCells.length === nonVisitedCells.length;
   }
 
-  getCellGroup(cell: Cell, currentCellGroup: Cell[]): void {
+  getCellGroup(cell, currentCellGroup) {
     currentCellGroup.push(cell);
 
     for (const neighbor of this.getNeighbors(cell)) {
@@ -117,13 +114,13 @@ export class ZipMap {
     }
   }
 
-  canReachNode(start: Cell, targetValue: number): boolean {
-    const currentCellGroup: Cell[] = [];
+  canReachNode(start, targetValue) {
+    const currentCellGroup = [];
     this.getCellGroupStopOnNodes(start, currentCellGroup);
     return currentCellGroup.some((cell) => cell.value === targetValue);
   }
 
-  getCellGroupStopOnNodes(cell: Cell, currentCellGroup: Cell[]): void {
+  getCellGroupStopOnNodes(cell, currentCellGroup) {
     currentCellGroup.push(cell);
 
     for (const neighbor of this.getNeighbors(cell)) {

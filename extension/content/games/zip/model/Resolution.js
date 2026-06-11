@@ -1,20 +1,14 @@
-import type { Cell } from "./Cell";
-import type { ZipMap } from "./Map";
+// Holds the current path through the map and the moves that build it up
 
-export class Resolution {
-  map: ZipMap;
-  path: Cell[];
-  onChange?: () => void;
-
-  constructor(map: ZipMap) {
+class Resolution {
+  constructor(map) {
     this.map = map;
     this.path = [];
   }
 
-  addStep(cell: Cell) {
+  addStep(cell) {
     cell.visited = true;
     this.path.push(cell);
-    this.onChange?.();
   }
 
   backStep() {
@@ -23,7 +17,6 @@ export class Resolution {
       cell.visited = false;
       cell.validMoves = undefined;
     }
-    this.onChange?.();
   }
 
   reset() {
@@ -32,10 +25,9 @@ export class Resolution {
       cell.validMoves = undefined;
     }
     this.path = [];
-    this.onChange?.();
   }
 
-  isCompleted(): boolean {
+  isCompleted() {
     if (!this.map.cells.every((cell) => cell.visited)) return false;
 
     let nodeNumber = 0;
