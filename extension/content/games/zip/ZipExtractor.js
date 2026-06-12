@@ -22,7 +22,7 @@ const ZipExtractor = {
       const valueEl = cellEl.querySelector('[data-cell-content="true"]')
       const parsed = valueEl ? parseInt(valueEl.textContent.trim()) : NaN
       grid[row][col].value = isNaN(parsed) ? null : parsed
-      grid[row][col].walls = ZipWalls.extract(cellEl)
+      grid[row][col].walls = WallDetector.extract(cellEl)
     }
 
     // Diagnostic snapshot: the rejilla's raw HTML lets us rebuild a

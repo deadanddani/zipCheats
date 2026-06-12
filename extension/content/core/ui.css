@@ -1,0 +1,82 @@
+/* Shared, game-agnostic UI: the board preview wrapper and the "Complete map"
+   toggle. Used by both the in-page banner and the extension popup so every game
+   renders inside the same chrome. The map itself is painted by each game's
+   view.draw() onto the <canvas>; this only styles the frame around it. */
+
+.game-preview {
+  display: flex;
+  justify-content: center;
+  padding: 6px;
+  background: #0b1116;
+  border: 1px solid #243039;
+  border-radius: 10px;
+}
+
+.game-canvas {
+  display: block;
+  border-radius: 4px;
+}
+
+/* Custom "Complete map" checkbox — not the native HTML control. */
+.game-toggle {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 4px 9px;
+  cursor: pointer;
+  user-select: none;
+  color: #c8d2dc;
+}
+
+.game-toggle__input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.game-toggle__box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid #4a5763;
+  border-radius: 5px;
+  background: #0e141a;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.game-toggle__tick {
+  width: 9px;
+  height: 5px;
+  border-left: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(-45deg) translate(0.5px, -1px) scale(0);
+  transition: transform 0.15s ease;
+}
+
+.game-toggle__input:checked + .game-toggle__box {
+  background: #0a66c2;
+  border-color: #0a66c2;
+}
+
+.game-toggle__input:checked + .game-toggle__box .game-toggle__tick {
+  transform: rotate(-45deg) translate(0.5px, -1px) scale(1);
+}
+
+.game-toggle__input:focus-visible + .game-toggle__box {
+  box-shadow: 0 0 0 3px rgba(10, 102, 194, 0.4);
+}
+
+.game-toggle__text {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.game-toggle__hint {
+  grid-column: 2;
+  color: #9aa6b2;
+  font-size: 11px;
+}

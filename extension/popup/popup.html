@@ -1,35 +1,50 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <link rel="stylesheet" href="../content/core/ui.css" />
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <header class="header">
-      <h1>zipCheats</h1>
-    </header>
-
-    <section class="actions">
-      <button id="go" type="button" class="btn btn--primary">Ir al juego</button>
-      <button id="solve" type="button" class="btn">Resolver ahora</button>
+    <!-- List of supported games -->
+    <section id="list-view" class="view">
+      <header class="header">
+        <h1>hackTheLink</h1>
+      </header>
+      <p class="subtitle">Available games</p>
+      <ul id="game-list" class="game-list"></ul>
     </section>
 
-    <label class="toggle">
-      <input id="completeMap" type="checkbox" />
-      <span>Completar mapa</span>
-      <small>Si está desactivado, se queda a un paso del final (para probar).</small>
-    </label>
+    <!-- Detail for the selected game -->
+    <section id="detail-view" class="view" hidden>
+      <header class="header header--detail">
+        <button id="back" type="button" class="back" aria-label="Back">←</button>
+        <img id="detail-icon" class="detail-icon" alt="" />
+        <h1 id="detail-name"></h1>
+      </header>
 
-    <section class="preview">
-      <div class="preview__head">
-        <span>Mapa cargado</span>
-        <span id="dims" class="preview__dims"></span>
-      </div>
-      <div id="board" class="board"></div>
+      <section class="actions">
+        <button id="go" type="button" class="btn">Go to game</button>
+        <button id="solve" type="button" class="btn btn--primary">Solve</button>
+      </section>
+
+      <div id="toggle" class="toggle-slot"></div>
+
+      <section id="preview" class="preview" hidden>
+        <div class="preview__head">
+          <span>Map loaded</span>
+          <span id="dims" class="preview__dims"></span>
+        </div>
+        <div class="game-preview"><canvas id="canvas" class="game-canvas"></canvas></div>
+      </section>
+
       <p id="status" class="status"></p>
     </section>
 
-    <script src="../content/Settings.js"></script>
+    <script src="../content/core/Settings.js"></script>
+    <script src="../content/core/GameCatalog.js"></script>
+    <script src="../content/core/GameViews.js"></script>
+    <script src="../content/core/Controls.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

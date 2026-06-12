@@ -1,4 +1,4 @@
-#zipcheats-toast {
+#hackthelink-toast {
   position: fixed;
   bottom: 24px;
   right: 24px;
@@ -20,16 +20,16 @@
   transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
-#zipcheats-toast.zipcheats-toast--visible {
+#hackthelink-toast.hackthelink-toast--visible {
   opacity: 1;
   transform: translateY(0);
 }
 
-#zipcheats-toast .zipcheats-toast__text {
+#hackthelink-toast .hackthelink-toast__text {
   font-weight: 600;
 }
 
-#zipcheats-toast .zipcheats-toast__close {
+#hackthelink-toast .hackthelink-toast__close {
   background: transparent;
   color: #9aa6b2;
   border: none;
@@ -39,6 +39,6 @@
   line-height: 1;
 }
 
-#zipcheats-toast .zipcheats-toast__close:hover {
+#hackthelink-toast .hackthelink-toast__close:hover {
   color: #fff;
 }

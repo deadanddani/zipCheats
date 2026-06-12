@@ -4,9 +4,10 @@
 // Internally it builds a ZipMap / Resolution and runs the Solver with the
 // BranchAndBoundMethod.
 const ZipSolver = {
-  // grid: Cell[][] with { row, col, value: number|null, walls: {top,right,bottom,left} }
+  // map: { grid: Cell[][] } where each cell is { row, col, value: number|null, walls }.
   // returns: number[] of cell indices in path order, or null if unsolvable.
-  solve(grid) {
+  solve(map) {
+    const grid = map.grid;
     const rows = grid.length;
     const cols = grid[0]?.length ?? 0;
     if (rows === 0 || cols === 0) return null;
@@ -31,8 +32,8 @@ const ZipSolver = {
       }
     }
 
-    const map = new ZipMap(rows, cols, cells);
-    const resolution = new Resolution(map);
+    const zipMap = new ZipMap(rows, cols, cells);
+    const resolution = new Resolution(zipMap);
     const solver = new Solver(new BranchAndBoundMethod());
 
     const solved = solver.solve(resolution);

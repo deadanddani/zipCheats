@@ -1,13 +1,19 @@
 {
   "manifest_version": 3,
-  "name": "zipCheats Extractor",
+  "name": "hackTheLink",
   "version": "1.0.0",
   "description": "Extracts LinkedIn games puzzle data and sends it to the local dev app",
   "content_scripts": [
     {
       "matches": ["https://www.linkedin.com/games/*"],
       "js": [
-        "content/games/zip/ZipWalls.js",
+        "content/core/Settings.js",
+        "content/core/Toast.js",
+        "content/core/GameCatalog.js",
+        "content/core/GameViews.js",
+        "content/core/Controls.js",
+        "content/games/Game.js",
+        "content/games/zip/extractor/WallDetector.js",
         "content/games/zip/ZipExtractor.js",
         "content/games/zip/model/Map.js",
         "content/games/zip/model/Resolution.js",
@@ -15,19 +21,25 @@
         "content/games/zip/solver/Solver.js",
         "content/games/zip/ZipSolver.js",
         "content/games/zip/ZipPlayer.js",
-        "content/Settings.js",
-        "content/Banner.js",
-        "content/Toast.js",
-        "content/GameRegistry.js",
-        "content/main.js"
+        "content/games/zip/ZipBoardView.js",
+        "content/games/zip/ZipGame.js",
+        "content/core/GameRegistry.js",
+        "content/core/Banner.js",
+        "content/core/main.js"
       ],
-      "css": ["content/Banner.css", "content/Toast.css"],
+      "css": ["content/core/ui.css", "content/core/Banner.css", "content/core/Toast.css"],
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["content/games/*/media/*"],
+      "matches": ["https://www.linkedin.com/*"]
     }
   ],
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "zipCheats"
+    "default_title": "hackTheLink"
   },
   "background": {
     "service_worker": "background.js"

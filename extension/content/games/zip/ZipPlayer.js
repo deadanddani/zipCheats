@@ -16,74 +16,77 @@ const ZipPlayer = {
   MAX_WAIT_MS: 32,
   // delta "dRow,dCol" -> the arrow key that moves there
   KEY: {
-    '-1,0': { key: 'ArrowUp', code: 'ArrowUp', keyCode: 38 },
-    '1,0': { key: 'ArrowDown', code: 'ArrowDown', keyCode: 40 },
-    '0,-1': { key: 'ArrowLeft', code: 'ArrowLeft', keyCode: 37 },
-    '0,1': { key: 'ArrowRight', code: 'ArrowRight', keyCode: 39 },
+    "-1,0": { key: "ArrowUp", code: "ArrowUp", keyCode: 38 },
+    "1,0": { key: "ArrowDown", code: "ArrowDown", keyCode: 40 },
+    "0,-1": { key: "ArrowLeft", code: "ArrowLeft", keyCode: 37 },
+    "0,1": { key: "ArrowRight", code: "ArrowRight", keyCode: 39 },
   },
 
   cellEl(idx) {
-    return document.querySelector(`[data-cell-idx="${idx}"]`)
+    return document.querySelector(`[data-cell-idx="${idx}"]`);
   },
 
   fireKey(target, spec) {
-    for (const type of ['keydown', 'keyup']) {
+    for (const type of ["keydown", "keyup"]) {
       const e = new KeyboardEvent(type, {
         key: spec.key,
         code: spec.code,
         bubbles: true,
         cancelable: true,
         composed: true,
-      })
+      });
       // keyCode / which are read-only and ignored by the constructor; force them
       // so any legacy handlers that still read them see the right value.
-      Object.defineProperty(e, 'keyCode', { get: () => spec.keyCode })
-      Object.defineProperty(e, 'which', { get: () => spec.keyCode })
-      target.dispatchEvent(e)
+      Object.defineProperty(e, "keyCode", { get: () => spec.keyCode });
+      Object.defineProperty(e, "which", { get: () => spec.keyCode });
+      target.dispatchEvent(e);
     }
   },
 
-  // path: number[] of cell indices. cols: board width (to turn indices into row/col).
-  // completeMap=false stops one move short so the puzzle is drawn but not finished.
-  async play(path, completeMap, cols) {
-    const cells = completeMap ? path : path.slice(0, -1)
+  // solution: number[] of cell indices. opts.map provides board width (cols) to
+  // turn indices into row/col. opts.completeMap=false stops one move short so the
+  // puzzle is drawn but not finished.
+  async play(solution, { completeMap, map }) {
+    const path = solution;
+    const cols = map.cols;
+    const cells = completeMap ? path : path.slice(0, -1);
     if (cells.length < 2) {
-      console.warn('[zipCheats] Path too short to play')
-      return
+      console.warn("[hackTheLink] Path too short to play");
+      return;
     }
 
-    const start = this.cellEl(cells[0])
+    const start = this.cellEl(cells[0]);
     if (!start) {
-      console.warn('[zipCheats] Could not find start cell')
-      return
+      console.warn("[hackTheLink] Could not find start cell");
+      return;
     }
 
-    const grid = document.querySelector('[data-trail-grid]') ?? document.body
+    const grid = document.querySelector("[data-trail-grid]") ?? document.body;
 
     // If the board already has a partial trail (e.g. resuming a puzzle), clear
     // it first — otherwise our arrow presses would extend the old path instead
     // of drawing ours from the start.
-    await this.resetIfNeeded(start)
+    await this.resetIfNeeded(start);
 
-    start.focus()
+    start.focus();
 
     for (let i = 1; i < cells.length; i++) {
-      const dr = Math.floor(cells[i] / cols) - Math.floor(cells[i - 1] / cols)
-      const dc = (cells[i] % cols) - (cells[i - 1] % cols)
-      const spec = this.KEY[`${dr},${dc}`]
+      const dr = Math.floor(cells[i] / cols) - Math.floor(cells[i - 1] / cols);
+      const dc = (cells[i] % cols) - (cells[i - 1] % cols);
+      const spec = this.KEY[`${dr},${dc}`];
       if (!spec) {
-        console.warn(`[zipCheats] Non-adjacent step ${i} (d=${dr},${dc})`)
-        continue
+        console.warn(`[hackTheLink] Non-adjacent step ${i} (d=${dr},${dc})`);
+        continue;
       }
       // re-focus the current head each step: the game moves focus to the newly
       // connected cell, and targeting it keeps the next arrow acting on the head.
-      const head = this.cellEl(cells[i - 1])
-      const target = head && document.activeElement !== head ? (head.focus(), head) : (document.activeElement ?? grid)
-      this.fireKey(target, spec)
-      await this.waitForMove(this.cellEl(cells[i]))
+      const head = this.cellEl(cells[i - 1]);
+      const target = head && document.activeElement !== head ? (head.focus(), head) : (document.activeElement ?? grid);
+      this.fireKey(target, spec);
+      await this.waitForMove(this.cellEl(cells[i]));
     }
 
-    console.log(`[zipCheats] Played ${cells.length}/${path.length} cells via keyboard (completeMap=${completeMap})`)
+    console.log(`[hackTheLink] Played ${cells.length}/${path.length} cells via keyboard (completeMap=${completeMap})`);
   },
 
   // Resolve as soon as the move lands (destination joined the trail or took
@@ -91,43 +94,43 @@ const ZipPlayer = {
   // flushes discrete key events before dispatchEvent even returns — then polls
   // per frame.
   waitForMove(targetEl) {
-    if (this.moved(targetEl)) return Promise.resolve()
+    if (this.moved(targetEl)) return Promise.resolve();
     return new Promise((resolve) => {
-      const deadline = performance.now() + this.MAX_WAIT_MS
+      const deadline = performance.now() + this.MAX_WAIT_MS;
       const check = () => {
-        if (this.moved(targetEl) || performance.now() >= deadline) resolve()
-        else requestAnimationFrame(check)
-      }
-      requestAnimationFrame(check)
-    })
+        if (this.moved(targetEl) || performance.now() >= deadline) resolve();
+        else requestAnimationFrame(check);
+      };
+      requestAnimationFrame(check);
+    });
   },
 
   moved(el) {
-    return !!el && (!!el.querySelector('[data-testid="filled-cell"]') || document.activeElement === el)
+    return !!el && (!!el.querySelector('[data-testid="filled-cell"]') || document.activeElement === el);
   },
 
   // A fresh board has exactly one filled cell (the start). More than that means
   // there's an existing trail to clear, which clicking the start node does.
   filledCount() {
-    return document.querySelectorAll('[data-testid="filled-cell"]').length
+    return document.querySelectorAll('[data-testid="filled-cell"]').length;
   },
 
   async resetIfNeeded(startEl) {
-    if (this.filledCount() <= 1) return
+    if (this.filledCount() <= 1) return;
 
-    console.log('[zipCheats] Existing trail found, resetting via start node')
-    this.clickCell(startEl)
+    console.log("[hackTheLink] Existing trail found, resetting via start node");
+    this.clickCell(startEl);
 
     // wait until the trail collapses back to just the start cell
-    const deadline = performance.now() + 300
+    const deadline = performance.now() + 300;
     while (this.filledCount() > 1 && performance.now() < deadline) {
-      await new Promise((resolve) => requestAnimationFrame(resolve))
+      await new Promise((resolve) => requestAnimationFrame(resolve));
     }
-    if (this.filledCount() > 1) console.warn('[zipCheats] Board did not reset cleanly')
+    if (this.filledCount() > 1) console.warn("[hackTheLink] Board did not reset cleanly");
   },
 
   clickCell(el) {
-    const r = el.getBoundingClientRect()
+    const r = el.getBoundingClientRect();
     const opts = {
       bubbles: true,
       cancelable: true,
@@ -135,10 +138,10 @@ const ZipPlayer = {
       button: 0,
       clientX: r.left + r.width / 2,
       clientY: r.top + r.height / 2,
-    }
-    for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) {
-      const Ctor = type.startsWith('pointer') ? PointerEvent : MouseEvent
-      el.dispatchEvent(new Ctor(type, { ...opts, pointerId: 1, pointerType: 'mouse', isPrimary: true }))
+    };
+    for (const type of ["pointerdown", "mousedown", "pointerup", "mouseup", "click"]) {
+      const Ctor = type.startsWith("pointer") ? PointerEvent : MouseEvent;
+      el.dispatchEvent(new Ctor(type, { ...opts, pointerId: 1, pointerType: "mouse", isPrimary: true }));
     }
   },
-}
+};
