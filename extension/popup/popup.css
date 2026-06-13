@@ -51,6 +51,75 @@ body {
   flex: none;
 }
 
+/* "Solve all dailies" panel */
+.dailies {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #38434f;
+  border-radius: 12px;
+}
+
+.dailies__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dailies__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #c8d2dc;
+}
+
+.dailies__value {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  color: #0a66c2;
+}
+
+.dailies__input {
+  width: 3ch;
+  padding: 0;
+  text-align: right;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+  background: transparent;
+  border: none;
+  -moz-appearance: textfield;
+}
+
+.dailies__input::-webkit-outer-spin-button,
+.dailies__input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.dailies__input:focus-visible {
+  outline: none;
+}
+
+.dailies__input:disabled {
+  color: #5b6671;
+}
+
+.dailies__unit {
+  font-size: 13px;
+  font-weight: 600;
+  color: #9aa6b2;
+}
+
+.dailies__run {
+  width: 100%;
+}
+
 /* Game list */
 .subtitle {
   margin: 0 0 10px;
@@ -135,6 +204,15 @@ body {
 
 .btn--primary:hover {
   background: #004182;
+}
+
+.btn:disabled,
+.btn:disabled:hover {
+  background: #2a343d;
+  border-color: #38434f;
+  color: #8a96a2;
+  cursor: default;
+  opacity: 0.6;
 }
 
 .solve-options {

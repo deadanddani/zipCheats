@@ -14,6 +14,9 @@ const elements = {
   canvas: document.getElementById("canvas"),
   dims: document.getElementById("dims"),
   status: document.getElementById("status"),
+  dailyTime: document.getElementById("daily-time"),
+  dailyUseGame: document.getElementById("daily-usegame"),
+  runDailies: document.getElementById("run-dailies"),
 };
 
 let currentGame = null;
@@ -97,6 +100,11 @@ async function openDetail(game) {
   // Solve-time is per-game, so rebuild it bound to the game being opened.
   elements.solveTime.replaceChildren(Controls.createSolveTimeControl(game.id));
 
+  // Some games (e.g. Patches) don't support auto-solve — block the button.
+  const canAutoSolve = game.canAutoSolve !== false;
+  elements.solve.disabled = !canAutoSolve;
+  elements.solve.title = canAutoSolve ? "" : `Auto-solve is disabled for ${game.name}`;
+
   const tab = await activeTab();
   if (!onGameRoute(tab, game)) {
     setStatus(`Open ${game.name} on LinkedIn to see the map.`);
@@ -142,6 +150,8 @@ elements.solve.addEventListener("click", async () => {
       setStatus(`Solved: ${res.cells} cells${res.completeMap ? "" : " (not completed)"}.`);
       elements.spoiler.classList.add("game-spoiler--revealed");
     } else if (res?.error === "no-solution") setStatus("No solution (walls loaded incorrectly?).");
+    else if (res?.error === "autosolve-disabled") setStatus(`Auto-solve is disabled for ${currentGame.name}.`);
+    else if (res?.error === "already-solved") setStatus("Already solved on LinkedIn.");
     else setStatus("No map loaded yet.");
   } catch {
     setStatus("Could not reach the page. Reload it and try again.");
@@ -158,8 +168,45 @@ function gameForTab(tab) {
   return GameCatalog.games.find((game) => onGameRoute(tab, game)) ?? null;
 }
 
+// "Solve all dailies": persist the two settings live, and on run, kick off a
+// DailyRunner pass that the content script drives through every game.
+async function wireDailies() {
+  const { dailyUseGameTime } = await Settings.get();
+
+  // Same slider as the per-game "Solve time", bound to the global dailies value.
+  const timeCtrl = Controls.createDailyTimeControl();
+  elements.dailyTime.replaceChildren(timeCtrl);
+  // "Use game time" locks the slider (each game keeps its own natural time).
+  timeCtrl.setEnabled(!dailyUseGameTime);
+  elements.dailyUseGame.checked = dailyUseGameTime;
+
+  elements.dailyUseGame.addEventListener("change", () => {
+    const on = elements.dailyUseGame.checked;
+    timeCtrl.setEnabled(!on);
+    Settings.set({ dailyUseGameTime: on });
+  });
+
+  elements.runDailies.addEventListener("click", async () => {
+    const { dailySeconds: seconds, dailyUseGameTime: useGameTime } = await Settings.get();
+    await DailyRunner.start({ seconds, useGameTime });
+
+    const firstId = DailyRunner.order()[0];
+    const first = firstId ? GameCatalog.byId(firstId) : null;
+    if (!first) return;
+
+    const tab = await activeTab();
+    // On a games page the content script picks up the run via storage; otherwise
+    // open the first game so a content script is there to drive it.
+    if (!tab || !/linkedin\.com\/games\//.test(tab.url ?? "")) {
+      await chrome.tabs.create({ url: first.url });
+    }
+    window.close();
+  });
+}
+
 async function init() {
   renderList();
+  wireDailies();
   const tab = await activeTab();
   const game = gameForTab(tab);
   if (game) openDetail(game);

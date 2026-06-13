@@ -19,25 +19,26 @@ const Controls = {
     return label
   },
 
-  // Per-game "target completion time" control: a slider with a large, editable
-  // value. The player times the finishing move so LinkedIn records roughly this
-  // many seconds. 0 is allowed but warns in red — completing instantly can crash
-  // the board. The slider caps at SOLVE_TIME_MAX; the field accepts any value.
+  // Generic "seconds" control: a slider with a large, editable value. Bound to a
+  // caller-supplied get/set so it works for both the per-game solve time and the
+  // global dailies time. 0 is allowed but warns in red — completing instantly can
+  // crash the board. The slider caps at SOLVE_TIME_MAX; the field accepts any
+  // value. The returned element exposes `setEnabled(on)` to dim/lock it.
   SOLVE_TIME_MAX: 60,
 
-  createSolveTimeControl(gameId) {
+  createTimeSlider({ label, get, set }) {
     const max = this.SOLVE_TIME_MAX
     const field = document.createElement('div')
     field.className = 'solve-time'
     field.innerHTML = `
       <div class="solve-time__head">
-        <span class="solve-time__text">Solve time</span>
+        <span class="solve-time__text">${label}</span>
         <span class="solve-time__value">
-          <input type="number" class="solve-time__input" min="0" step="1" inputmode="numeric" aria-label="Solve time in seconds" />
+          <input type="number" class="solve-time__input" min="0" step="1" inputmode="numeric" aria-label="${label} in seconds" />
           <span class="solve-time__unit">s</span>
         </span>
       </div>
-      <input type="range" class="solve-time__slider" min="0" max="${max}" step="1" aria-label="Solve time" />
+      <input type="range" class="solve-time__slider" min="0" max="${max}" step="1" aria-label="${label}" />
       <small class="solve-time__warn" hidden>⚠ Completing in 0s can crash the board.</small>
     `
 
@@ -54,30 +55,48 @@ const Controls = {
       field.classList.toggle('solve-time--danger', danger)
     }
 
-    Settings.getSolveSeconds(gameId).then(reflect)
+    Promise.resolve(get()).then(reflect)
 
     const commit = (n) => {
       const v = Math.max(0, Math.floor(Number.isFinite(n) ? n : 0))
       reflect(v)
-      Settings.setSolveSeconds(gameId, v)
+      set(v)
     }
 
     slider.addEventListener('input', () => commit(parseInt(slider.value, 10)))
     input.addEventListener('input', () => commit(parseInt(input.value, 10)))
 
-    // Disable and dim when Complete map is off, since the timing has no effect
-    // then. Stays in sync via storage so it reflects toggles in either surface.
-    const applyEnabled = (on) => {
+    field.setEnabled = (on) => {
       field.classList.toggle('solve-time--off', !on)
       slider.disabled = !on
       input.disabled = !on
     }
-    Settings.get().then((s) => applyEnabled(s.completeMap))
-    chrome.storage.onChanged.addListener((changes, area) => {
-      if (area === 'local' && changes.completeMap) applyEnabled(changes.completeMap.newValue)
-    })
 
     return field
+  },
+
+  // Per-game solve time, dimmed/locked while "Complete map" is off (no effect
+  // then). Stays in sync via storage so it reflects toggles in either surface.
+  createSolveTimeControl(gameId) {
+    const field = this.createTimeSlider({
+      label: 'Solve time',
+      get: () => Settings.getSolveSeconds(gameId),
+      set: (v) => Settings.setSolveSeconds(gameId, v),
+    })
+    Settings.get().then((s) => field.setEnabled(s.completeMap))
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local' && changes.completeMap) field.setEnabled(changes.completeMap.newValue)
+    })
+    return field
+  },
+
+  // Global "time per game" for a dailies run.
+  createDailyTimeControl() {
+    return this.createTimeSlider({
+      label: 'Time per game',
+      get: async () => (await Settings.get()).dailySeconds,
+      set: (v) => Settings.set({ dailySeconds: v }),
+    })
   },
 
   // Markup for a spoiler-covered board preview: caller fills `inner` with the

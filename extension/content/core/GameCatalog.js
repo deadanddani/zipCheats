@@ -2,6 +2,23 @@
 // pulling in the content-script-only runtime (extractor/solver/player).
 // To add a game: append an entry here, drop its files under content/games/<id>/
 // and register the runtime in GameRegistry.
+//
+// timerStartsOnClick: how this game's LinkedIn timer behaves on a *fresh* puzzle
+// (clock at 0). false → the clock runs from puzzle load; true → it only starts
+// on the first move. Either way, if LinkedIn already has time on the clock
+// (a resumed puzzle), it keeps counting regardless. Defaults to false.
+//
+// canAutoSolve: whether the auto-solver may run for this game. When false the
+// solve action is blocked. Defaults to true.
+//
+// stateType / stateScheme: how to find this game's progress in LinkedIn's
+// localStorage (used to read elapsed time and detect an already-solved puzzle).
+//   stateType   — the numeric game id LinkedIn uses in its keys.
+//   stateScheme — 'numeric': separate keys `play:gameState|timeElapsed|shareData:
+//                  (<member>,<type>,<N>)`, time in ms, solved ⇔ shareData exists.
+//                 'urn': one wrapped key `play:urn:li:fsd_game:(<member>,<type>,
+//                  <N>)` = { data, expireAt }, time in seconds, solved ⇔ a
+//                  terminal gamePlayState (e.g. END_SOLVED).
 const GameCatalog = {
   games: [
     {
@@ -12,6 +29,10 @@ const GameCatalog = {
       match: '/games/zip',
       selector: '[data-trail-grid]',
       viewScript: 'content/games/zip/ZipBoardView.js',
+      timerStartsOnClick: false,
+      canAutoSolve: true,
+      stateType: 6,
+      stateScheme: 'numeric',
     },
     {
       id: 'queens',
@@ -21,6 +42,10 @@ const GameCatalog = {
       match: '/games/queens',
       selector: '#game-board-container, .game-board-container, [id*="queens"], [class*="queens-grid"]',
       viewScript: 'content/games/queens/QueensBoardView.js',
+      timerStartsOnClick: false,
+      canAutoSolve: true,
+      stateType: 3,
+      stateScheme: 'numeric',
     },
     {
       id: 'sudoku',
@@ -30,6 +55,10 @@ const GameCatalog = {
       match: '/games/mini-sudoku',
       selector: '.sudoku-cell[data-cell-idx], [data-cell-idx]',
       viewScript: 'content/games/sudoku/SudokuBoardView.js',
+      timerStartsOnClick: false,
+      canAutoSolve: true,
+      stateType: 7,
+      stateScheme: 'urn',
     },
     {
       id: 'tango',
@@ -39,6 +68,10 @@ const GameCatalog = {
       match: '/games/tango',
       selector: '#tango-cell-0, [id^="tango-cell-"], [data-cell-idx]',
       viewScript: 'content/games/tango/TangoBoardView.js',
+      timerStartsOnClick: false,
+      canAutoSolve: true,
+      stateType: 5,
+      stateScheme: 'numeric',
     },
     {
       id: 'patches',
@@ -48,6 +81,10 @@ const GameCatalog = {
       match: '/games/patches',
       selector: '[data-testid="cell-0"], [data-cell-idx]',
       viewScript: 'content/games/patches/PatchesBoardView.js',
+      timerStartsOnClick: false,
+      canAutoSolve: false,
+      stateType: 8,
+      stateScheme: 'numeric',
     },
   ],
 

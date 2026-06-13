@@ -6,11 +6,18 @@ const Settings = {
   // instantly, which the UI flags in red.
   DEFAULT_SOLVE_SECONDS: 1,
 
+  // Default target time (seconds) per game for a "solve all dailies" run.
+  DEFAULT_DAILY_SECONDS: 5,
+
   DEFAULTS: {
     completeMap: false,
     // Per-game target completion time in whole seconds, keyed by game id.
     // e.g. { zip: 5 }. Missing entries fall back to DEFAULT_SOLVE_SECONDS.
     solveSeconds: {},
+    // "Solve all dailies": target time applied to every game in the run, and
+    // whether to instead let each game complete at its own natural time.
+    dailySeconds: 5,
+    dailyUseGameTime: false,
   },
 
   async get() {

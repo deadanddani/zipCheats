@@ -11,6 +11,17 @@
       <header class="header">
         <h1>hackTheLink</h1>
       </header>
+      <!-- Solve every daily in one run -->
+      <section class="dailies">
+        <div id="daily-time"></div>
+        <label class="game-toggle dailies__usegame">
+          <input id="daily-usegame" type="checkbox" class="game-toggle__input" />
+          <span class="game-toggle__box"><span class="game-toggle__tick"></span></span>
+          <span class="game-toggle__text">Use game time</span>
+        </label>
+        <button id="run-dailies" type="button" class="btn btn--primary dailies__run">Solve all dailies</button>
+      </section>
+
       <p class="subtitle">Available games</p>
       <ul id="game-list" class="game-list"></ul>
     </section>
@@ -54,6 +65,7 @@
     <script src="../content/core/GameCatalog.js"></script>
     <script src="../content/core/GameViews.js"></script>
     <script src="../content/core/Controls.js"></script>
+    <script src="../content/core/DailyRunner.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

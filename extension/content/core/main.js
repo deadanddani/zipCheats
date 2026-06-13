@@ -2,6 +2,8 @@ let game = null
 let lastMap = null
 let solutionPromise = null
 let pendingWait = null // cancels the in-flight waitForElement poll on navigation
+let dailyState = null // cached "solve all dailies" run state, refreshed per route
+let dailyWatchdog = null // fails the current daily game if its board never loads
 // LinkedIn's timer starts at puzzle load, which is ~when the board element
 // appears (onMapReady). We anchor here — base = seconds already on the clock
 // (non-zero only when resuming a puzzle), at = our wall-clock reference — so the
@@ -24,19 +26,65 @@ function computeSolution(map) {
   })
 }
 
-async function applySolution() {
+// overrides lets the daily runner force completion and skip the per-game time.
+async function applySolution(overrides = {}) {
+  if (game.canAutoSolve === false) {
+    console.warn(`[hackTheLink] ${game.name}: auto-solve is disabled`)
+    return { ok: false, error: 'autosolve-disabled' }
+  }
+
   if (!solutionPromise) {
     console.warn('[hackTheLink] No map extracted yet')
     return { ok: false, error: 'no-map' }
   }
 
+  if (!overrides.skipSolvedCheck && GameState.isSolved(game)) {
+    console.log('[hackTheLink] Puzzle already solved — nothing to play')
+    return { ok: false, error: 'already-solved' }
+  }
+
   const solution = await solutionPromise
   if (!solution) return { ok: false, error: 'no-solution' }
 
-  const { completeMap } = await Settings.get()
-  const solveSeconds = await Settings.getSolveSeconds(game.id)
-  await game.player.play(solution, { completeMap, map: lastMap, solveSeconds, elapsedAnchor })
+  const completeMap = overrides.completeMap ?? (await Settings.get()).completeMap
+  const solveSeconds = overrides.solveSeconds ?? (await Settings.getSolveSeconds(game.id))
+  await game.player.play(solution, {
+    completeMap,
+    map: lastMap,
+    solveSeconds,
+    elapsedAnchor,
+    timerStartsOnClick: game.timerStartsOnClick ?? false,
+  })
   return { ok: true, cells: solution.length, completeMap }
+}
+
+// Solve the current game as part of a dailies run: wait until the game's clock
+// reaches the configured target (so it records ~that time), then complete it,
+// and advance to the next game. "Use game time" skips the wait entirely.
+async function solveForDaily() {
+  clearTimeout(dailyWatchdog)
+  // Re-check now that the board has loaded and LinkedIn's state is populated:
+  // an already-solved puzzle must skip straight away, never wait out the timer.
+  if (GameState.isSolved(game)) {
+    await DailyRunner.advance('skipped')
+    return
+  }
+  const target = DailyRunner.targetSeconds(dailyState)
+  try {
+    if (target != null) {
+      const elapsed = () => elapsedAnchor.base + (Date.now() - elapsedAnchor.at) / 1000
+      while (elapsed() < target) await new Promise((r) => setTimeout(r, 100))
+    }
+    const res = await applySolution({ completeMap: true, solveSeconds: 0, skipSolvedCheck: true })
+    if (res?.ok) await DailyRunner.advance('done')
+    else await DailyRunner.advance('error', res?.error || 'failed')
+  } catch (err) {
+    await DailyRunner.advance('error', err?.message || String(err))
+  }
+}
+
+function isDailyTurn() {
+  return !!dailyState?.active && !dailyState.finished && game?.id === DailyRunner.expectedId(dailyState)
 }
 
 async function onMapReady(el) {
@@ -45,17 +93,20 @@ async function onMapReady(el) {
     data = await game.extractor.extract(el)
   } catch (err) {
     console.error('[hackTheLink] Map extraction failed:', err)
+    if (isDailyTurn()) await DailyRunner.advance('error', 'extraction failed')
     return
   }
   lastMap = data
-  const base = typeof game.player.readElapsedSeconds === 'function' ? (game.player.readElapsedSeconds() ?? 0) : 0
+  const base = GameState.readElapsedSeconds(game) ?? 0
   elapsedAnchor = { at: Date.now(), base }
   chrome.runtime.sendMessage({ type: 'SEND_MAP', data, url: location.href })
   console.log('[hackTheLink] Map extracted')
 
   solutionPromise = computeSolution(data)
 
-  if (autoRunRequested()) {
+  if (isDailyTurn()) {
+    solveForDaily()
+  } else if (autoRunRequested()) {
     applySolution()
   } else {
     Banner.show({ game, map: data, solution: solutionPromise, onSolve: applySolution })
@@ -104,15 +155,43 @@ function resetSession() {
     clearInterval(pendingWait)
     pendingWait = null
   }
+  clearTimeout(dailyWatchdog)
   document.getElementById('hackthelink-banner')?.remove()
   lastMap = null
   solutionPromise = null
   elapsedAnchor = null
 }
 
-function startGame() {
+async function startGame() {
   resetSession()
   game = GameRegistry.detect()
+  dailyState = await DailyRunner.read()
+
+  // A dailies run is in progress: the overlay persists and we drive this game.
+  if (dailyState?.active) {
+    DailyOverlay.render(dailyState)
+    if (dailyState.finished) return
+
+    const expectedId = DailyRunner.expectedId(dailyState)
+    if (!game || game.id !== expectedId) {
+      DailyRunner.gotoExpected(dailyState)
+      return
+    }
+    if (GameState.isSolved(game)) {
+      await DailyRunner.advance('skipped')
+      return
+    }
+    // Mark it active in the overlay, then wait for the board to solve it. A
+    // watchdog fails the game if its board never shows so the run can't stall.
+    dailyState.statuses[expectedId] = 'solving'
+    await DailyRunner.write(dailyState)
+    DailyOverlay.render(dailyState)
+    dailyWatchdog = setTimeout(() => DailyRunner.advance('error', 'board did not load'), 40000)
+    pendingWait = waitForElement(game.selector, onMapReady)
+    return
+  }
+
+  DailyOverlay.hide()
   if (game) {
     console.log(`[hackTheLink] ${game.name}: waiting for "${game.selector}"...`)
     pendingWait = waitForElement(game.selector, onMapReady)
@@ -120,6 +199,20 @@ function startGame() {
     console.log('[hackTheLink] No game configured for this URL')
   }
 }
+
+// React only to the run starting (kick off if we're already on a game page) or
+// being cancelled (tear the overlay down). Per-game advances keep active=true
+// and are handled by the navigation flow, so they're ignored here.
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'local' || !changes[DailyRunner.KEY]) return
+  const wasActive = !!changes[DailyRunner.KEY].oldValue?.active
+  const nowActive = !!changes[DailyRunner.KEY].newValue?.active
+  if (!wasActive && nowActive) startGame()
+  else if (wasActive && !nowActive) {
+    dailyState = null
+    DailyOverlay.hide()
+  }
+})
 
 // LinkedIn games are an SPA: navigating between them never reloads this script,
 // so watch for URL changes and re-run detection on each route.

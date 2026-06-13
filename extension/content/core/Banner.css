@@ -69,3 +69,14 @@
   background: #38434f;
   cursor: default;
 }
+
+#hackthelink-banner .htl-banner__solve:disabled {
+  background: #38434f;
+  color: #8a96a2;
+  cursor: default;
+  opacity: 0.7;
+}
+
+#hackthelink-banner .htl-banner__solve:disabled:hover {
+  background: #38434f;
+}

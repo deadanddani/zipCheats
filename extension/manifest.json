@@ -51,10 +51,13 @@
         "content/games/patches/PatchesBoardView.js",
         "content/games/patches/PatchesGame.js",
         "content/core/GameRegistry.js",
+        "content/core/GameState.js",
+        "content/core/DailyOverlay.js",
+        "content/core/DailyRunner.js",
         "content/core/Banner.js",
         "content/core/main.js"
       ],
-      "css": ["content/core/ui.css", "content/core/Banner.css", "content/core/Toast.css"],
+      "css": ["content/core/ui.css", "content/core/Banner.css", "content/core/Toast.css", "content/core/Daily.css"],
       "run_at": "document_idle"
     }
   ],

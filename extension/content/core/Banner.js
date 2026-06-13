@@ -32,21 +32,34 @@ const Banner = {
     banner.querySelector('.htl-banner__solve-time').appendChild(Controls.createSolveTimeControl(game.id))
 
     const solveBtn = banner.querySelector('.htl-banner__solve')
+    if (game.canAutoSolve === false) {
+      solveBtn.disabled = true
+      solveBtn.textContent = 'Auto-solve unavailable'
+      solveBtn.title = `Auto-solve is disabled for ${game.name}`
+      banner.querySelector('.htl-banner__close').addEventListener('click', () => banner.remove())
+      document.body.appendChild(banner)
+      return
+    }
     solveBtn.addEventListener('click', async () => {
       solveBtn.disabled = true
       solveBtn.classList.add('htl-banner__solve--busy')
       solveBtn.textContent = 'Solving…'
       try {
-        await onSolve()
+        const res = await onSolve()
+        if (res?.error === 'already-solved') {
+          // Nothing to play; let the user know instead of revealing.
+          solveBtn.textContent = 'Already solved ✓'
+          return
+        }
         // Keep the banner open and reveal the solution.
         banner.querySelector('.game-spoiler')?.classList.add('game-spoiler--revealed')
       } catch (err) {
         console.error('[hackTheLink] Solve failed:', err)
       } finally {
-        // Re-enable so the user can solve again.
+        // Re-enable so the user can solve again (unless we early-returned above).
+        if (solveBtn.textContent === 'Solving…') solveBtn.textContent = 'Solve'
         solveBtn.disabled = false
         solveBtn.classList.remove('htl-banner__solve--busy')
-        solveBtn.textContent = 'Solve'
       }
     })
 
