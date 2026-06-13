@@ -14,6 +14,9 @@ const ZipPlayer = {
   // Hard cap on how long to wait for one move to be confirmed before giving up
   // and pressing the next key anyway. Keeps a wrong/absent signal from stalling.
   MAX_WAIT_MS: 32,
+  // LinkedIn's internal game-type id for Zip (codename "trail"), used to find
+  // this puzzle's persisted state in localStorage.
+  GAME_TYPE: 6,
   // delta "dRow,dCol" -> the arrow key that moves there
   KEY: {
     "-1,0": { key: "ArrowUp", code: "ArrowUp", keyCode: 38 },
@@ -43,10 +46,42 @@ const ZipPlayer = {
     }
   },
 
-  // solution: number[] of cell indices. opts.map provides board width (cols) to
-  // turn indices into row/col. opts.completeMap=false stops one move short so the
-  // puzzle is drawn but not finished.
-  async play(solution, { completeMap, map }) {
+  // Reads how many seconds LinkedIn already has on the clock for the in-progress
+  // Zip puzzle. The state lives in localStorage under a key shaped like
+  // `play:urn:li:fsd_game:(<member>,6,<puzzle>)`, whose `data` is a JSON string
+  // holding `{ gamePlayState, timeElapsed, ... }`. Returns null if not found.
+  readElapsedSeconds() {
+    const keyRe = new RegExp(`^play:urn:li:fsd_game:\\([^,]+,${this.GAME_TYPE},\\d+\\)$`);
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!keyRe.test(k)) continue;
+      try {
+        const data = JSON.parse(JSON.parse(localStorage.getItem(k)).data);
+        if (data.gamePlayState === "IN_PROGRESS" && Number.isFinite(data.timeElapsed)) {
+          return data.timeElapsed;
+        }
+      } catch {
+        /* skip malformed entries */
+      }
+    }
+    return null;
+  },
+
+  // Blocks until the game's live elapsed time reaches `targetSeconds`, so the
+  // finishing move lands at the configured completion time. The clock starts at
+  // puzzle load, so we extrapolate from the anchor captured then; if we're
+  // already past the target there's nothing to wait for.
+  async waitUntilElapsed(targetSeconds, anchor) {
+    const target = Math.max(0, targetSeconds);
+    const ref = anchor ?? { at: Date.now(), base: 0 };
+    const liveElapsed = () => ref.base + (Date.now() - ref.at) / 1000;
+    while (liveElapsed() < target) {
+      await new Promise((r) => setTimeout(r, 80));
+    }
+  },
+
+  // completeMap=false stops one move short so the puzzle is drawn but not finished.
+  async play(solution, { completeMap, map, solveSeconds = 0, elapsedAnchor = null }) {
     const path = solution;
     const cols = map.cols;
     const cells = completeMap ? path : path.slice(0, -1);
@@ -77,6 +112,11 @@ const ZipPlayer = {
       if (!spec) {
         console.warn(`[hackTheLink] Non-adjacent step ${i} (d=${dr},${dc})`);
         continue;
+      }
+      // When actually finishing, hold the last (completing) move until the
+      // game's clock reaches the configured time, so LinkedIn records ~that.
+      if (completeMap && i === cells.length - 1) {
+        await this.waitUntilElapsed(solveSeconds, elapsedAnchor);
       }
       // re-focus the current head each step: the game moves focus to the newly
       // connected cell, and targeting it keeps the next arrow acting on the head.
@@ -121,7 +161,6 @@ const ZipPlayer = {
     console.log("[hackTheLink] Existing trail found, resetting via start node");
     this.clickCell(startEl);
 
-    // wait until the trail collapses back to just the start cell
     const deadline = performance.now() + 300;
     while (this.filledCount() > 1 && performance.now() < deadline) {
       await new Promise((resolve) => requestAnimationFrame(resolve));

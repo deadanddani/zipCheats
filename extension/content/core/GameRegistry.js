@@ -1,8 +1,7 @@
-// Content-script registry of fully-wired game descriptors (metadata + runtime).
-// `detect()` returns the descriptor whose `match` is in the current path, or
-// null. To add a game: import its descriptor here and append it to `games`.
+// Content-script registry of fully-wired game descriptors (metadata + runtime),
+// the counterpart to the metadata-only GameCatalog.
 const GameRegistry = {
-  games: [Game.assert(ZipGame)],
+  games: [Game.assert(ZipGame), Game.assert(QueensGame), Game.assert(SudokuGame), Game.assert(TangoGame), Game.assert(PatchesGame)],
 
   detect() {
     const path = location.pathname

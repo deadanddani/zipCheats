@@ -13,7 +13,6 @@
         "content/core/GameViews.js",
         "content/core/Controls.js",
         "content/games/Game.js",
-        "content/games/zip/extractor/WallDetector.js",
         "content/games/zip/ZipExtractor.js",
         "content/games/zip/model/Map.js",
         "content/games/zip/model/Resolution.js",
@@ -23,6 +22,34 @@
         "content/games/zip/ZipPlayer.js",
         "content/games/zip/ZipBoardView.js",
         "content/games/zip/ZipGame.js",
+        "content/games/queens/QueensExtractor.js",
+        "content/games/queens/model/QueensMap.js",
+        "content/games/queens/model/QueensResolution.js",
+        "content/games/queens/solver/QueensSolverCore.js",
+        "content/games/queens/QueensSolver.js",
+        "content/games/queens/QueensPlayer.js",
+        "content/games/queens/QueensBoardView.js",
+        "content/games/queens/QueensGame.js",
+        "content/games/sudoku/SudokuExtractor.js",
+        "content/games/sudoku/model/SudokuMap.js",
+        "content/games/sudoku/model/SudokuResolution.js",
+        "content/games/sudoku/solver/SudokuSolverCore.js",
+        "content/games/sudoku/SudokuSolver.js",
+        "content/games/sudoku/SudokuPlayer.js",
+        "content/games/sudoku/SudokuBoardView.js",
+        "content/games/sudoku/SudokuGame.js",
+        "content/games/tango/TangoExtractor.js",
+        "content/games/tango/model/TangoMap.js",
+        "content/games/tango/solver/TangoSolverCore.js",
+        "content/games/tango/TangoSolver.js",
+        "content/games/tango/TangoPlayer.js",
+        "content/games/tango/TangoBoardView.js",
+        "content/games/tango/TangoGame.js",
+        "content/games/patches/PatchesExtractor.js",
+        "content/games/patches/PatchesSolver.js",
+        "content/games/patches/PatchesPlayer.js",
+        "content/games/patches/PatchesBoardView.js",
+        "content/games/patches/PatchesGame.js",
         "content/core/GameRegistry.js",
         "content/core/Banner.js",
         "content/core/main.js"
@@ -37,9 +64,19 @@
       "matches": ["https://www.linkedin.com/*"]
     }
   ],
+  "icons": {
+    "16": "iconoExtewnsion.png",
+    "48": "iconoExtewnsion.png",
+    "128": "iconoExtewnsion.png"
+  },
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "hackTheLink"
+    "default_title": "hackTheLink",
+    "default_icon": {
+      "16": "iconoExtewnsion.png",
+      "48": "iconoExtewnsion.png",
+      "128": "iconoExtewnsion.png"
+    }
   },
   "background": {
     "service_worker": "background.js"

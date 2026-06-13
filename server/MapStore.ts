@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import type { Grid } from '../src/models/Cell'
+import type { Grid } from '../src/zip/models/Cell'
 
 export interface StoredMap {
   key: string

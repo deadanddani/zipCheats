@@ -1,11 +1,7 @@
-// In-page card shown when you open a supported puzzle without the auto-run param.
-// A browser extension can't pop its own toolbar UI open programmatically, so
-// this injected card is how we ask "run the solver?" right on the page. It's
-// game-agnostic: the board preview comes from the detected game's view.draw and
-// the icon/name from its descriptor, so every game reuses the same card. The
-// solver itself runs eagerly in main.js — here "Resolver" just applies the answer.
+// A browser extension can't open its own toolbar UI programmatically, so this
+// injected in-page card is how we offer the solve when the auto-run param is absent.
 const Banner = {
-  show({ game, map, onSolve }) {
+  show({ game, map, solution, onSolve }) {
     if (document.getElementById('hackthelink-banner')) return
 
     const banner = document.createElement('div')
@@ -16,13 +12,24 @@ const Banner = {
         <span class="htl-banner__label">hackTheLink detected a ${game.name}</span>
         <button class="htl-banner__close" type="button" aria-label="Close">✕</button>
       </div>
-      <div class="game-preview"><canvas class="game-canvas"></canvas></div>
-      <div class="htl-banner__toggle"></div>
+      ${Controls.spoilerMarkup('<div class="game-preview"><canvas class="game-canvas"></canvas></div>')}
+      <div class="solve-options">
+        <div class="htl-banner__toggle"></div>
+        <div class="solve-options__divider"></div>
+        <div class="htl-banner__solve-time"></div>
+      </div>
       <button class="htl-banner__solve" type="button">Solve</button>
     `
 
-    game.view.draw(banner.querySelector('.game-canvas'), map)
+    const canvas = banner.querySelector('.game-canvas')
+    game.view.draw(canvas, map)
+    // Paint the solution underneath the blur once it's ready.
+    Promise.resolve(solution).then((sol) => {
+      if (sol) game.view.draw(canvas, { ...map, solution: sol })
+    })
+    Controls.wireSpoiler(banner.querySelector('.game-spoiler'))
     banner.querySelector('.htl-banner__toggle').appendChild(Controls.createCompleteMapToggle())
+    banner.querySelector('.htl-banner__solve-time').appendChild(Controls.createSolveTimeControl(game.id))
 
     const solveBtn = banner.querySelector('.htl-banner__solve')
     solveBtn.addEventListener('click', async () => {
@@ -30,9 +37,16 @@ const Banner = {
       solveBtn.classList.add('htl-banner__solve--busy')
       solveBtn.textContent = 'Solving…'
       try {
-        await onSolve() // waits for the eager solve if it isn't done yet
+        await onSolve()
+        // Keep the banner open and reveal the solution.
+        banner.querySelector('.game-spoiler')?.classList.add('game-spoiler--revealed')
+      } catch (err) {
+        console.error('[hackTheLink] Solve failed:', err)
       } finally {
-        banner.remove()
+        // Re-enable so the user can solve again.
+        solveBtn.disabled = false
+        solveBtn.classList.remove('htl-banner__solve--busy')
+        solveBtn.textContent = 'Solve'
       }
     })
 

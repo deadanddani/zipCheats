@@ -1,18 +1,12 @@
-// Adapter between the content script and the object model. Takes the grid that
-// ZipExtractor produces and returns the solution as an ordered list of cell
-// indices (idx = row * cols + col), ready to be replayed onto the board.
-// Internally it builds a ZipMap / Resolution and runs the Solver with the
-// BranchAndBoundMethod.
+// Adapter from the extractor's grid to the solver: returns the solution as cell
+// indices (idx = row * cols + col) in path order, or null if unsolvable.
 const ZipSolver = {
-  // map: { grid: Cell[][] } where each cell is { row, col, value: number|null, walls }.
-  // returns: number[] of cell indices in path order, or null if unsolvable.
   solve(map) {
     const grid = map.grid;
     const rows = grid.length;
     const cols = grid[0]?.length ?? 0;
     if (rows === 0 || cols === 0) return null;
 
-    // Build cells as the model expects them (adds the `visited` flag).
     const cells = [];
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {

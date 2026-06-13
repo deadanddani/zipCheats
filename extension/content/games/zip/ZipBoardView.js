@@ -1,10 +1,6 @@
-// Zip's board renderer — implements the GameView contract (draw(canvas, map)).
-// A custom canvas render of the board (no DOM grid), used by both the in-page
-// banner and the popup. Loaded as a classic script in both contexts; it
-// self-registers into GameViews so either side can paint Zip by game id.
+// Canvas renderer for the Zip board; self-registers into GameViews (bottom of
+// file) so either context can paint it by game id.
 const ZipBoardView = {
-  // Custom canvas render of the board: filled cells, thin grid lines, thick
-  // yellow walls, and numbered nodes drawn as blue chips.
   draw(canvas, map) {
     const { rows, cols, grid } = map
     const dpr = window.devicePixelRatio || 1
@@ -24,7 +20,6 @@ const ZipBoardView = {
     ctx.fillStyle = '#0b1116'
     ctx.fillRect(0, 0, w, h)
 
-    // Cells + thin separators.
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const x = pad + c * cell
@@ -37,7 +32,6 @@ const ZipBoardView = {
       }
     }
 
-    // Walls: thick yellow segments on the cell edges that carry them.
     ctx.strokeStyle = '#f5c518'
     ctx.lineWidth = 3
     ctx.lineCap = 'round'
@@ -55,7 +49,27 @@ const ZipBoardView = {
       }
     }
 
-    // Numbered nodes as blue chips with white digits.
+    // solution is the path as flat cell indices (idx = row * cols + col) in order.
+    const path = map.solution ?? []
+    if (path.length > 1) {
+      const center = (idx) => ({
+        x: pad + (idx % cols) * cell + cell / 2,
+        y: pad + Math.floor(idx / cols) * cell + cell / 2,
+      })
+      ctx.strokeStyle = '#3ddc84'
+      ctx.lineWidth = Math.max(2, cell * 0.16)
+      ctx.lineJoin = 'round'
+      ctx.lineCap = 'round'
+      ctx.beginPath()
+      const start = center(path[0])
+      ctx.moveTo(start.x, start.y)
+      for (let i = 1; i < path.length; i++) {
+        const p = center(path[i])
+        ctx.lineTo(p.x, p.y)
+      }
+      ctx.stroke()
+    }
+
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.font = `600 ${Math.floor(cell * 0.46)}px -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif`

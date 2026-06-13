@@ -1,0 +1,67 @@
+.queens-board {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--cell-size, 64px));
+  border: 3px solid #2d2a26;
+  border-radius: 6px;
+  overflow: hidden;
+  user-select: none;
+}
+
+.queens-cell {
+  width: var(--cell-size, 64px);
+  height: var(--cell-size, 64px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  /* Thin internal grid lines; region borders are drawn thicker below. */
+  box-shadow: inset 0 0 0 1px rgba(45, 42, 38, 0.18);
+  background: var(--region-color, #faf7f2);
+  transition: filter 0.1s;
+}
+
+.queens-cell:hover {
+  filter: brightness(0.94);
+}
+
+/* Thick black borders between different colored regions. */
+.queens-cell.region-top    { box-shadow: inset 0 2px 0 0 #2d2a26; }
+.queens-cell.region-right  { box-shadow: inset -2px 0 0 0 #2d2a26; }
+.queens-cell.region-bottom { box-shadow: inset 0 -2px 0 0 #2d2a26; }
+.queens-cell.region-left   { box-shadow: inset 2px 0 0 0 #2d2a26; }
+.queens-cell.region-top.region-right    { box-shadow: inset 0 2px 0 0 #2d2a26, inset -2px 0 0 0 #2d2a26; }
+.queens-cell.region-top.region-left     { box-shadow: inset 0 2px 0 0 #2d2a26, inset 2px 0 0 0 #2d2a26; }
+.queens-cell.region-bottom.region-right  { box-shadow: inset 0 -2px 0 0 #2d2a26, inset -2px 0 0 0 #2d2a26; }
+.queens-cell.region-bottom.region-left   { box-shadow: inset 0 -2px 0 0 #2d2a26, inset 2px 0 0 0 #2d2a26; }
+.queens-cell.region-top.region-right.region-bottom { box-shadow: inset 0 2px 0 0 #2d2a26, inset -2px 0 0 0 #2d2a26, inset 0 -2px 0 0 #2d2a26; }
+.queens-cell.region-top.region-left.region-bottom  { box-shadow: inset 0 2px 0 0 #2d2a26, inset 2px 0 0 0 #2d2a26, inset 0 -2px 0 0 #2d2a26; }
+.queens-cell.region-top.region-right.region-left   { box-shadow: inset 0 2px 0 0 #2d2a26, inset -2px 0 0 0 #2d2a26, inset 2px 0 0 0 #2d2a26; }
+.queens-cell.region-bottom.region-right.region-left { box-shadow: inset 0 -2px 0 0 #2d2a26, inset -2px 0 0 0 #2d2a26, inset 2px 0 0 0 #2d2a26; }
+.queens-cell.region-top.region-right.region-bottom.region-left { box-shadow: inset 0 2px 0 0 #2d2a26, inset -2px 0 0 0 #2d2a26, inset 0 -2px 0 0 #2d2a26, inset 2px 0 0 0 #2d2a26; }
+
+/* The crown. */
+.queens-cell__queen {
+  font-size: calc(var(--cell-size, 64px) * 0.52);
+  line-height: 1;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+  z-index: 2;
+}
+
+/* Auto X drawn on every cell a placed crown forbids. */
+.queens-cell__block {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--cell-size, 64px) * 0.34);
+  font-weight: 800;
+  color: rgba(45, 42, 38, 0.45);
+  pointer-events: none;
+}
+
+.queens-cell.is-blocked { cursor: not-allowed; }
+.queens-cell.is-blocked:hover { filter: none; }
+
+.queens-board--solved { border-color: #34d399; box-shadow: 0 0 16px rgba(52, 211, 153, 0.45); }

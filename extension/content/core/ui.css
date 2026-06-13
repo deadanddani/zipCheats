@@ -17,6 +17,59 @@
   border-radius: 4px;
 }
 
+/* Spoiler: the board (with its solution) is painted underneath, but blurred and
+   covered by a "See spoiler" pill until the user clicks to reveal it. */
+.game-spoiler {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.game-spoiler:not(.game-spoiler--revealed) .game-preview {
+  filter: blur(16px);
+}
+
+.game-spoiler__cover {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: rgba(11, 17, 22, 0.35);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.game-spoiler__cover:hover {
+  background: rgba(11, 17, 22, 0.2);
+}
+
+.game-spoiler--revealed .game-spoiler__cover {
+  display: none;
+}
+
+.game-spoiler__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: rgba(11, 17, 22, 0.78);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.game-spoiler__label::before {
+  content: "👁";
+  font-size: 13px;
+}
+
 /* Custom "Complete map" checkbox — not the native HTML control. */
 .game-toggle {
   position: relative;
@@ -79,4 +132,156 @@
   grid-column: 2;
   color: #9aa6b2;
   font-size: 11px;
+}
+
+/* Grouping card for the solve settings (Complete map + Solve time), so they
+   read as one related cluster, set apart from the action buttons and preview. */
+.solve-options {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #243039;
+  border-radius: 12px;
+}
+
+.solve-options__divider {
+  height: 1px;
+  background: #243039;
+}
+
+/* Solve time only applies while Complete map is on — dim it otherwise. */
+.solve-time--off {
+  opacity: 0.45;
+}
+
+.solve-time--off .solve-time__warn {
+  display: none;
+}
+
+.solve-time__slider:disabled {
+  cursor: default;
+}
+
+/* Per-game target completion time: a slider with a large, editable value.
+   Accent colour is the LinkedIn blue, switching to red in the 0s danger state. */
+.solve-time {
+  --accent: #0a66c2;
+  display: grid;
+  gap: 10px;
+}
+
+.solve-time--danger {
+  --accent: #ff6b6b;
+}
+
+.solve-time__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.solve-time__text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #c8d2dc;
+}
+
+.solve-time__value {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  color: var(--accent);
+  transition: color 0.15s;
+}
+
+.solve-time__input {
+  width: 2ch;
+  min-width: 2ch;
+  padding: 0;
+  text-align: right;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+  background: transparent;
+  border: none;
+  -moz-appearance: textfield;
+}
+
+.solve-time__input::-webkit-outer-spin-button,
+.solve-time__input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.solve-time__input:focus-visible {
+  outline: none;
+}
+
+.solve-time__unit {
+  font-size: 13px;
+  font-weight: 600;
+  color: #9aa6b2;
+}
+
+/* Range slider — track filled up to the value via the JS-set --fill var. */
+.solve-time__slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  margin: 0;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--accent) 0 var(--fill, 0%),
+    #243039 var(--fill, 0%) 100%
+  );
+  cursor: pointer;
+}
+
+.solve-time__slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  transition: border-color 0.15s, transform 0.1s;
+}
+
+.solve-time__slider::-webkit-slider-thumb:hover {
+  transform: scale(1.12);
+}
+
+.solve-time__slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.solve-time__slider:focus-visible {
+  outline: none;
+}
+
+.solve-time__slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(10, 102, 194, 0.35);
+}
+
+.solve-time--danger .solve-time__slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.35);
+}
+
+.solve-time__warn {
+  color: #ff6b6b;
+  font-size: 11px;
+  font-weight: 600;
 }

@@ -8,13 +8,17 @@ const elements = {
   go: document.getElementById("go"),
   solve: document.getElementById("solve"),
   toggle: document.getElementById("toggle"),
+  solveTime: document.getElementById("solve-time"),
   preview: document.getElementById("preview"),
+  spoiler: document.getElementById("spoiler"),
   canvas: document.getElementById("canvas"),
   dims: document.getElementById("dims"),
   status: document.getElementById("status"),
 };
 
 let currentGame = null;
+let currentMap = null;
+let currentView = null;
 
 function setStatus(text) {
   elements.status.textContent = text || "";
@@ -46,11 +50,19 @@ function onGameRoute(tab, game) {
   return new RegExp(`^https://www\\.linkedin\\.com${game.match.replace("/", "\\/")}`).test(tab?.url ?? "");
 }
 
-// Ask the content script on the active tab for whatever it last extracted.
 async function fetchMap(tab) {
   try {
     const res = await chrome.tabs.sendMessage(tab.id, { type: "GET_MAP" });
     return res?.map ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchSolution(tab) {
+  try {
+    const res = await chrome.tabs.sendMessage(tab.id, { type: "GET_SOLUTION" });
+    return res?.solution ?? null;
   } catch {
     return null;
   }
@@ -73,6 +85,8 @@ function renderList() {
 
 async function openDetail(game) {
   currentGame = game;
+  currentMap = null;
+  currentView = null;
   elements.detailIcon.src = chrome.runtime.getURL(game.icon);
   elements.detailName.textContent = game.name;
   elements.listView.hidden = true;
@@ -80,7 +94,9 @@ async function openDetail(game) {
   setStatus("");
   elements.preview.hidden = true;
 
-  // Show the live board only if the active tab is actually on this game.
+  // Solve-time is per-game, so rebuild it bound to the game being opened.
+  elements.solveTime.replaceChildren(Controls.createSolveTimeControl(game.id));
+
   const tab = await activeTab();
   if (!onGameRoute(tab, game)) {
     setStatus(`Open ${game.name} on LinkedIn to see the map.`);
@@ -88,10 +104,15 @@ async function openDetail(game) {
   }
   const map = await fetchMap(tab);
   if (map) {
-    const view = await viewFor(game);
+    currentMap = map;
+    currentView = await viewFor(game);
     elements.dims.textContent = `${map.rows}×${map.cols}`;
-    view.draw(elements.canvas, map);
+    elements.spoiler.classList.remove("game-spoiler--revealed");
+    currentView.draw(elements.canvas, map);
     elements.preview.hidden = false;
+    // Paint the solution underneath the blur once it's ready.
+    const solution = await fetchSolution(tab);
+    if (solution) currentView.draw(elements.canvas, { ...map, solution });
   } else {
     setStatus("No map loaded yet. Reload the page if needed.");
   }
@@ -105,6 +126,8 @@ function showList() {
 
 elements.back.addEventListener("click", showList);
 
+Controls.wireSpoiler(elements.spoiler);
+
 elements.go.addEventListener("click", () => chrome.tabs.create({ url: currentGame?.url }));
 
 elements.solve.addEventListener("click", async () => {
@@ -115,8 +138,10 @@ elements.solve.addEventListener("click", async () => {
   }
   try {
     const res = await chrome.tabs.sendMessage(tab.id, { type: "SOLVE_NOW" });
-    if (res?.ok) setStatus(`Solved: ${res.cells} cells${res.completeMap ? "" : " (not completed)"}.`);
-    else if (res?.error === "no-solution") setStatus("No solution (walls loaded incorrectly?).");
+    if (res?.ok) {
+      setStatus(`Solved: ${res.cells} cells${res.completeMap ? "" : " (not completed)"}.`);
+      elements.spoiler.classList.add("game-spoiler--revealed");
+    } else if (res?.error === "no-solution") setStatus("No solution (walls loaded incorrectly?).");
     else setStatus("No map loaded yet.");
   } catch {
     setStatus("Could not reach the page. Reload it and try again.");
@@ -129,4 +154,15 @@ elements.toggle.appendChild(
   }),
 );
 
-renderList();
+function gameForTab(tab) {
+  return GameCatalog.games.find((game) => onGameRoute(tab, game)) ?? null;
+}
+
+async function init() {
+  renderList();
+  const tab = await activeTab();
+  const game = gameForTab(tab);
+  if (game) openDetail(game);
+}
+
+init();

@@ -1,5 +1,3 @@
-// Holds the current path through the map and the moves that build it up
-
 class Resolution {
   constructor(map) {
     this.map = map;

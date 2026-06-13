@@ -38,7 +38,6 @@ class ZipMap {
   }
 
   getLastVisitedNode() {
-    // get the visited cell with the highest value from the map
     let lastNode = undefined;
     for (const cell of this.cells) {
       if (cell.visited && cell.value !== null && (lastNode === undefined || cell.value > lastNode.value)) {

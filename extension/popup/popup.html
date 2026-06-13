@@ -28,14 +28,23 @@
         <button id="solve" type="button" class="btn btn--primary">Solve</button>
       </section>
 
-      <div id="toggle" class="toggle-slot"></div>
+      <div class="solve-options">
+        <div id="toggle"></div>
+        <div class="solve-options__divider"></div>
+        <div id="solve-time"></div>
+      </div>
 
       <section id="preview" class="preview" hidden>
         <div class="preview__head">
           <span>Map loaded</span>
           <span id="dims" class="preview__dims"></span>
         </div>
-        <div class="game-preview"><canvas id="canvas" class="game-canvas"></canvas></div>
+        <div id="spoiler" class="game-spoiler">
+          <div class="game-preview"><canvas id="canvas" class="game-canvas"></canvas></div>
+          <button type="button" class="game-spoiler__cover">
+            <span class="game-spoiler__label">See spoiler</span>
+          </button>
+        </div>
       </section>
 
       <p id="status" class="status"></p>

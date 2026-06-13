@@ -1,5 +1,3 @@
-// Small floating popup shown after a solve completes, reporting how long the
-// solver took to find the solution. Auto-dismisses after a few seconds.
 const Toast = {
   show(message, { durationMs = 4000 } = {}) {
     document.getElementById('hackthelink-toast')?.remove()
@@ -14,7 +12,7 @@ const Toast = {
     toast.querySelector('.hackthelink-toast__close').addEventListener('click', () => toast.remove())
     document.body.appendChild(toast)
 
-    // trigger the enter transition on the next frame
+    // next frame, so the enter transition actually fires
     requestAnimationFrame(() => toast.classList.add('hackthelink-toast--visible'))
 
     if (durationMs > 0) {

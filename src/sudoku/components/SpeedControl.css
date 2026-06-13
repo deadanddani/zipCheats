@@ -1,0 +1,110 @@
+.speed-control {
+  --accent: #fbbf24;
+
+  position: fixed;
+  top: 50%;
+  right: 1.5rem;
+  transform: translateY(-50%);
+  z-index: 30;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1.1rem 0.9rem 1.25rem;
+  background: rgba(26, 29, 36, 0.92);
+  border: 1px solid #2a2e37;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+  user-select: none;
+}
+
+.speed-control__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  text-align: center;
+}
+
+.speed-control__title {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.speed-control__readout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* fixed slot sized for the tallest label so the panel never resizes,
+     whether the readout is one line ("Parado") or two ("1000 pasos/s") */
+  width: 80px;
+  height: 2.1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--accent);
+  text-align: center;
+  transition: color 0.25s ease;
+}
+
+/* ── custom vertical track ── */
+
+.speed-control__track {
+  position: relative;
+  width: 12px;
+  height: 210px;
+  border-radius: 999px;
+  /* faint full-range hint behind the fill */
+  background: linear-gradient(to top, #3a2326 0%, #1f3a30 50%, #3a3320 100%);
+  box-shadow: inset 0 0 0 1px #2a2e37;
+  cursor: pointer;
+  outline: none;
+  touch-action: none;
+}
+
+.speed-control__track:focus-visible {
+  box-shadow: inset 0 0 0 1px #2a2e37, 0 0 0 3px rgba(148, 163, 184, 0.35);
+}
+
+.speed-control__fill {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 0%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: height 0.12s ease, background 0.25s ease;
+}
+
+.speed-control__thumb {
+  position: absolute;
+  left: 50%;
+  bottom: 0%;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #f9fafb;
+  border: 3px solid var(--accent);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  transform: translate(-50%, 50%);
+  transition: bottom 0.12s ease, border-color 0.25s ease, box-shadow 0.2s ease;
+  cursor: grab;
+}
+
+.speed-control__track:active .speed-control__thumb {
+  cursor: grabbing;
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 25%, transparent), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* glow cue at the extremes so "Parado" and "Sin límite" read at a glance */
+
+.speed-control--paused,
+.speed-control--unlimited {
+  border-color: color-mix(in srgb, var(--accent) 55%, #2a2e37);
+}

@@ -1,6 +1,4 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { writeFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { MapStore } from './MapStore'
 
 const LINKEDIN_GROUP = 'LinkedIn'
@@ -56,19 +54,9 @@ export class ZipMapApi {
     if (req.method === 'POST' && rest.length === 0) {
       const body = await readBody(req)
       const { data, url } = JSON.parse(body)
-      const { grid, html, wallDebug } = data
+      const { grid } = data
       const savedKey = todayKey()
       this.store.save(savedKey, LINKEDIN_GROUP, grid, url)
-      if (html) {
-        const debugPath = join(process.cwd(), 'server', 'storage', `debug-${savedKey}.html`)
-        writeFileSync(debugPath, html)
-        console.log(`[ZipMapApi] Debug HTML written to ${debugPath}`)
-      }
-      if (wallDebug) {
-        const wallPath = join(process.cwd(), 'server', 'storage', `debug-${savedKey}-walls.json`)
-        writeFileSync(wallPath, JSON.stringify(wallDebug, null, 2))
-        console.log(`[ZipMapApi] Wall debug written to ${wallPath}`)
-      }
       console.log(`[ZipMapApi] Grid stored under key "${savedKey}": ${grid.length}x${grid[0].length}`)
       sendJson(res, 200, { ok: true, key: savedKey })
       return

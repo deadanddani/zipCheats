@@ -1,11 +1,64 @@
+// Fetches the puzzle from LinkedIn's data rather than scraping hashed CSS
+// classes (which change between builds). The endpoint returns HTML with the
+// puzzle embedded in its React Server Components payload under `trailGamePuzzle`:
+//
+//   { "gridSize": 7,
+//     "orderedSequence": [48, 42, ...],   // cell idx that holds 1, 2, 3, ...
+//     "solution": [48, 41, 40, ...],      // full solved path (cell indices)
+//     "walls": [{ "cellIdx": 1, "direction": "WallDirection_DOWN" }, ...] }
+//
+// The fetch is same-origin, so session cookies ride along automatically.
 const ZipExtractor = {
-  selector: '[data-trail-grid]',
+  endpoint: 'https://www.linkedin.com/flagship-web/games/zip/',
 
-  extract(gridEl) {
-    const { rows, cols } = this.dimensions(gridEl)
+  async extract() {
+    const puzzle = await this.fetchPuzzle()
+    return this.toMap(puzzle)
+  },
 
-    const grid = Array.from({ length: rows }, (_, row) =>
-      Array.from({ length: cols }, (_, col) => ({
+  async fetchPuzzle() {
+    const res = await fetch(this.endpoint, { credentials: 'include' })
+    if (!res.ok) throw new Error(`Zip endpoint returned ${res.status}`)
+    return this.parsePuzzle(await res.text())
+  },
+
+  // Quotes inside the RSC string are escaped (sometimes doubly) but braces never
+  // are, so a brace-depth scan finds the object regardless of escape layers; then
+  // strip backslash layers until JSON.parse succeeds.
+  parsePuzzle(html) {
+    const at = html.indexOf('trailGamePuzzle')
+    if (at === -1) throw new Error('trailGamePuzzle not found in payload')
+
+    const start = html.indexOf('{', at)
+    if (start === -1) throw new Error('puzzle object start not found')
+
+    let depth = 0
+    let end = -1
+    for (let i = start; i < html.length; i++) {
+      const ch = html[i]
+      if (ch === '{') depth++
+      else if (ch === '}' && --depth === 0) {
+        end = i
+        break
+      }
+    }
+    if (end === -1) throw new Error('puzzle object end not found')
+
+    let raw = html.slice(start, end + 1)
+    for (let attempt = 0; attempt < 6; attempt++) {
+      try {
+        return JSON.parse(raw)
+      } catch {
+        raw = raw.replace(/\\(.)/g, '$1') // peel one escape layer
+      }
+    }
+    throw new Error('could not parse trailGamePuzzle JSON')
+  },
+
+  toMap(puzzle) {
+    const n = puzzle.gridSize
+    const grid = Array.from({ length: n }, (_, row) =>
+      Array.from({ length: n }, (_, col) => ({
         row,
         col,
         value: null,
@@ -13,79 +66,45 @@ const ZipExtractor = {
       }))
     )
 
-    for (const cellEl of document.querySelectorAll('[data-cell-idx]')) {
-      const idx = parseInt(cellEl.dataset.cellIdx)
-      const row = Math.floor(idx / cols)
-      const col = idx % cols
-      if (row >= rows || col >= cols) continue
-
-      const valueEl = cellEl.querySelector('[data-cell-content="true"]')
-      const parsed = valueEl ? parseInt(valueEl.textContent.trim()) : NaN
-      grid[row][col].value = isNaN(parsed) ? null : parsed
-      grid[row][col].walls = WallDetector.extract(cellEl)
+    // orderedSequence[i] is the cell index that holds the number i + 1.
+    const seq = puzzle.orderedSequence ?? []
+    for (let i = 0; i < seq.length; i++) {
+      const cell = this.cellAt(grid, n, seq[i])
+      if (cell) cell.value = i + 1
     }
 
-    // Diagnostic snapshot: the rejilla's raw HTML lets us rebuild a
-    // wall extractor that doesn't depend on LinkedIn's hashed classes.
-    // Harmless to keep; the server only writes it to a debug file.
-    return { rows, cols, grid, html: gridEl.outerHTML, wallDebug: this.wallDebug(cols) }
-  },
-
-  // Diagnostic: for every non-content child div of every cell, capture the
-  // computed geometry/border/background of the element and its ::before /
-  // ::after pseudo-elements. This reveals exactly how a wall and its side
-  // are encoded so the real detector can be written against ground truth.
-  wallDebug(cols) {
-    const px = (v) => Math.round(parseFloat(v) || 0)
-    const borders = (s) => [px(s.borderTopWidth), px(s.borderRightWidth), px(s.borderBottomWidth), px(s.borderLeftWidth)]
-    const out = []
-    for (const cellEl of document.querySelectorAll('[data-cell-idx]')) {
-      const idx = parseInt(cellEl.dataset.cellIdx)
-      const cell = cellEl.getBoundingClientRect()
-      for (const el of cellEl.children) {
-        if (el.matches('[data-cell-content]')) continue
-        const r = el.getBoundingClientRect()
-        const self = getComputedStyle(el)
-        const before = getComputedStyle(el, '::before')
-        const after = getComputedStyle(el, '::after')
-        out.push({
-          idx,
-          rc: [Math.floor(idx / cols), idx % cols],
-          cls: el.className,
-          rect: { w: Math.round(r.width), h: Math.round(r.height), dx: Math.round(r.left - cell.left), dy: Math.round(r.top - cell.top) },
-          pos: self.position,
-          bg: self.backgroundColor,
-          bd: borders(self),
-          beforeContent: before.content,
-          beforeBd: borders(before),
-          beforeBg: before.backgroundColor,
-          beforeRect: [px(before.width), px(before.height)],
-          afterContent: after.content,
-          afterBd: borders(after),
-          afterBg: after.backgroundColor,
-          afterRect: [px(after.width), px(after.height)],
-        })
-      }
+    for (const wall of puzzle.walls ?? []) {
+      this.applyWall(grid, n, wall.cellIdx, wall.direction)
     }
-    return out
+
+    // solution is LinkedIn's own solved path, kept for the dev app and debugging.
+    return { rows: n, cols: n, grid, solution: puzzle.solution ?? null }
   },
 
-  // LinkedIn's grid dimensions used to be exposed via hashed CSS custom
-  // properties (--d07f72d6 / --eb9f871d), but those hashes change between
-  // builds. The puzzle is always a square grid, so the cell count is the
-  // most reliable source: derive the side from sqrt(cellCount), falling
-  // back to the CSS grid template (also stable, unhashed) if it isn't.
-  dimensions(gridEl) {
-    const cellCount = document.querySelectorAll('[data-cell-idx]').length
+  cellAt(grid, n, idx) {
+    return grid[Math.floor(idx / n)]?.[idx % n]
+  },
 
-    const side = Math.round(Math.sqrt(cellCount))
-    if (side * side === cellCount) return { rows: side, cols: side }
+  SIDE: {
+    WallDirection_UP: 'top',
+    WallDirection_DOWN: 'bottom',
+    WallDirection_LEFT: 'left',
+    WallDirection_RIGHT: 'right',
+  },
+  OPPOSITE: { top: 'bottom', bottom: 'top', left: 'right', right: 'left' },
+  OFFSET: { top: [-1, 0], bottom: [1, 0], left: [0, -1], right: [0, 1] },
 
-    const style = getComputedStyle(gridEl)
-    const cols = style.gridTemplateColumns.trim().split(/\s+/).filter(Boolean).length
-    const rows = style.gridTemplateRows.trim().split(/\s+/).filter(Boolean).length
-    if (cols > 0 && rows > 0) return { rows, cols }
+  // Mark both the owning cell and its neighbour, so the wall is seen from either side.
+  applyWall(grid, n, idx, direction) {
+    const side = this.SIDE[direction]
+    if (!side) return
 
-    return { rows: 8, cols: 8 }
+    const cell = this.cellAt(grid, n, idx)
+    if (!cell) return
+    cell.walls[side] = true
+
+    const [dr, dc] = this.OFFSET[side]
+    const neighbor = grid[cell.row + dr]?.[cell.col + dc]
+    if (neighbor) neighbor.walls[this.OPPOSITE[side]] = true
   },
 }

@@ -1,0 +1,103 @@
+.sudoku-board {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  outline: none;
+  user-select: none;
+}
+
+.sudoku-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--cell-size, 52px));
+  background: #2d2a26;
+  border: 3px solid #2d2a26;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.sudoku-cell {
+  width: var(--cell-size, 52px);
+  height: var(--cell-size, 52px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: #faf7f2;
+  color: #2563eb;
+  font-size: calc(var(--cell-size, 52px) * 0.5);
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  /* thin internal grid lines; box borders are drawn thicker below */
+  box-shadow: inset 0 0 0 0.5px rgba(45, 42, 38, 0.35);
+  transition: background 0.1s;
+}
+
+.sudoku-cell.is-given {
+  color: #2d2a26;
+  font-weight: 800;
+  cursor: default;
+  background: #efeae1;
+}
+
+.sudoku-cell:not(.is-given):hover {
+  background: #fdf3d8;
+}
+
+.sudoku-cell.is-selected {
+  background: #cfe3ff;
+  box-shadow: inset 0 0 0 2px #2563eb;
+}
+
+.sudoku-cell.is-conflict {
+  color: #dc2626;
+  background: #fbdada;
+}
+
+/* thick rules between the 3×3 boxes (and the outer frame) */
+.sudoku-cell.box-left   { box-shadow: inset 2px 0 0 0 #2d2a26; }
+.sudoku-cell.box-top    { box-shadow: inset 0 2px 0 0 #2d2a26; }
+.sudoku-cell.box-top.box-left { box-shadow: inset 2px 0 0 0 #2d2a26, inset 0 2px 0 0 #2d2a26; }
+
+.sudoku-board--solved .sudoku-grid {
+  border-color: #34d399;
+  box-shadow: 0 0 16px rgba(52, 211, 153, 0.45);
+}
+
+/* ── number pad ── */
+.sudoku-pad {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.4rem;
+  width: 100%;
+  max-width: 320px;
+}
+
+.sudoku-pad__key {
+  padding: 0.55rem 0;
+  background: #1a1d24;
+  color: #e5e7eb;
+  border: 1.5px solid #374151;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.sudoku-pad__key:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.sudoku-pad__key--erase {
+  color: #f87171;
+}
+
+.sudoku-pad__key--erase:hover {
+  background: #f87171;
+  border-color: #f87171;
+  color: #111318;
+}

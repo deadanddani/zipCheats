@@ -1,6 +1,3 @@
-// One method: makeNextMove(resolution) advances or backtracks the search by a
-// single step, pruning branches that can't lead to a full solution.
-
 class BranchAndBoundMethod {
   constructor() {
     this.name = 'Branch and Bound';
