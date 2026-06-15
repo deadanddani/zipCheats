@@ -10,6 +10,8 @@
         "content/core/Settings.js",
         "content/core/Toast.js",
         "content/core/GameCatalog.js",
+        "content/core/LiveClock.js",
+        "content/core/Pacer.js",
         "content/core/GameViews.js",
         "content/core/Controls.js",
         "content/games/Game.js",

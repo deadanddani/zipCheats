@@ -43,19 +43,6 @@ const ZipPlayer = {
     }
   },
 
-  // Blocks until the game's live elapsed time reaches `targetSeconds`, so the
-  // finishing move lands at the configured completion time. The clock starts at
-  // puzzle load, so we extrapolate from the anchor captured then; if we're
-  // already past the target there's nothing to wait for.
-  async waitUntilElapsed(targetSeconds, anchor) {
-    const target = Math.max(0, targetSeconds);
-    const ref = anchor ?? { at: Date.now(), base: 0 };
-    const liveElapsed = () => ref.base + (Date.now() - ref.at) / 1000;
-    while (liveElapsed() < target) {
-      await new Promise((r) => setTimeout(r, 80));
-    }
-  },
-
   // completeMap=false stops one move short so the puzzle is drawn but not finished.
   async play(solution, { completeMap, map, solveSeconds = 0, elapsedAnchor = null, timerStartsOnClick = false }) {
     const path = solution;
@@ -101,7 +88,7 @@ const ZipPlayer = {
       // When actually finishing, hold the last (completing) move until the
       // game's clock reaches the configured time, so LinkedIn records ~that.
       if (completeMap && i === cells.length - 1) {
-        await this.waitUntilElapsed(solveSeconds, anchor);
+        await LiveClock.waitUntilElapsed(solveSeconds, anchor);
       }
       // re-focus the current head each step: the game moves focus to the newly
       // connected cell, and targeting it keeps the next arrow acting on the head.

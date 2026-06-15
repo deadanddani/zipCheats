@@ -38,11 +38,6 @@ async function applySolution(overrides = {}) {
     return { ok: false, error: 'no-map' }
   }
 
-  if (!overrides.skipSolvedCheck && GameState.isSolved(game)) {
-    console.log('[hackTheLink] Puzzle already solved — nothing to play')
-    return { ok: false, error: 'already-solved' }
-  }
-
   const solution = await solutionPromise
   if (!solution) return { ok: false, error: 'no-solution' }
 
@@ -65,7 +60,7 @@ async function solveForDaily() {
   clearTimeout(dailyWatchdog)
   // Re-check now that the board has loaded and LinkedIn's state is populated:
   // an already-solved puzzle must skip straight away, never wait out the timer.
-  if (GameState.isSolved(game)) {
+  if (GameState.isSolved(game, lastMap)) {
     await DailyRunner.advance('skipped')
     return
   }
@@ -88,6 +83,14 @@ function isDailyTurn() {
 }
 
 async function onMapReady(el) {
+  // Remember which game this poll belongs to. Extraction is async (it fetches the
+  // puzzle), so by the time it resolves the user may have navigated to a *different*
+  // game — bail then, so a stale game's banner doesn't pop up and block the new one.
+  // We key on the game itself, not the session id: LinkedIn often settles a route in
+  // two URL hops (e.g. trailing slash or a transient /preload/), and bailing on those
+  // would suppress the banner. Only a *different* detected game means we've moved on;
+  // a null detection (a transitional route like /preload/) is not a reason to bail.
+  const myGame = game
   let data
   try {
     data = await game.extractor.extract(el)
@@ -96,6 +99,8 @@ async function onMapReady(el) {
     if (isDailyTurn()) await DailyRunner.advance('error', 'extraction failed')
     return
   }
+  const detected = GameRegistry.detect()
+  if (game !== myGame || (detected && detected !== myGame)) return
   lastMap = data
   const base = GameState.readElapsedSeconds(game) ?? 0
   elapsedAnchor = { at: Date.now(), base }
@@ -163,6 +168,7 @@ function resetSession() {
 }
 
 async function startGame() {
+  if (!isContextAlive()) return shutdown()
   resetSession()
   game = GameRegistry.detect()
   dailyState = await DailyRunner.read()
@@ -177,10 +183,10 @@ async function startGame() {
       DailyRunner.gotoExpected(dailyState)
       return
     }
-    if (GameState.isSolved(game)) {
-      await DailyRunner.advance('skipped')
-      return
-    }
+    // NB: don't decide "already solved" here — at this point the board hasn't
+    // loaded and today's localStorage keys may not be written yet, so isSolved
+    // (with no map) can false-positive on yesterday's solved puzzle. solveForDaily
+    // re-checks with the live board+map after onMapReady and skips for real then.
     // Mark it active in the overlay, then wait for the board to solve it. A
     // watchdog fails the game if its board never shows so the run can't stall.
     dailyState.statuses[expectedId] = 'solving'
@@ -220,7 +226,35 @@ let currentUrl = location.href
 function onLocationMaybeChanged() {
   if (location.href === currentUrl) return
   currentUrl = location.href
+  // LinkedIn routes a game through a transient `/preload/` URL while it loads, and
+  // it often renders the board *under* that URL. Any route that doesn't resolve to
+  // a game is treated as transitional: we keep the in-flight waitForElement alive
+  // instead of tearing it down, so we still catch the board when it appears. If we
+  // reset here, the wait dies and the board renders to nobody — no popup until a
+  // full reload lands directly on /games/<id>/.
+  if (!GameRegistry.detect()) return
   startGame()
+}
+
+// When the extension is reloaded/updated, this content script is orphaned but
+// its intervals keep firing — every chrome.* call then throws "Extension context
+// invalidated", which kills the flow and stops the banner from ever showing.
+// Detect the dead context (chrome.runtime.id goes undefined) and tear ourselves
+// down so we stop polling instead of throwing on every tick.
+function isContextAlive() {
+  try {
+    return !!chrome.runtime?.id
+  } catch {
+    return false
+  }
+}
+
+function shutdown() {
+  clearInterval(routeTick)
+  if (pendingWait) clearInterval(pendingWait)
+  clearTimeout(dailyWatchdog)
+  window.removeEventListener('popstate', onLocationMaybeChanged)
+  document.getElementById('hackthelink-banner')?.remove()
 }
 
 // A content script lives in an isolated world, so monkey-patching the page's
@@ -228,6 +262,9 @@ function onLocationMaybeChanged() {
 // popstate only fires on back/forward. Polling location.href is the only signal
 // that reliably catches every route change from here.
 window.addEventListener('popstate', onLocationMaybeChanged)
-setInterval(onLocationMaybeChanged, 400)
+const routeTick = setInterval(() => {
+  if (!isContextAlive()) return shutdown()
+  onLocationMaybeChanged()
+}, 400)
 
 startGame()

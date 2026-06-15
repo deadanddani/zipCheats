@@ -30,7 +30,7 @@ const QueensPlayer = {
   },
 
   // completeMap=false stops one crown short, leaving the puzzle drawn but unfinished.
-  async play(solution, { completeMap, map }) {
+  async play(solution, { completeMap, map, solveSeconds = 0, elapsedAnchor = null }) {
     if (!Array.isArray(solution) || solution.length === 0) {
       console.warn('[hackTheLink] Queens: empty solution, nothing to play');
       return;
@@ -39,21 +39,20 @@ const QueensPlayer = {
     await this.clearBoard();
 
     const cols = map.cols;
-    const queens = completeMap ? solution : solution.slice(0, -1);
 
-    let placed = 0;
-    for (const { row, col } of queens) {
+    const { placed, total } = await Pacer.play(solution, { completeMap, solveSeconds, elapsedAnchor }, async ({ row, col }) => {
       const idx = row * cols + col;
       const el = this.cellEl(idx);
       if (!el) {
         console.warn(`[hackTheLink] Queens: cell ${idx} (r${row},c${col}) not found`);
-        continue;
+        return false;
       }
-      if (await this.ensureCrown(el)) placed++;
-      else console.warn(`[hackTheLink] Queens: could not crown cell ${idx} (r${row},c${col})`);
-    }
+      if (await this.ensureCrown(el)) return true;
+      console.warn(`[hackTheLink] Queens: could not crown cell ${idx} (r${row},c${col})`);
+      return false;
+    });
 
-    console.log(`[hackTheLink] Queens: placed ${placed}/${queens.length} crowns (completeMap=${completeMap})`);
+    console.log(`[hackTheLink] Queens: placed ${placed}/${total} crowns (completeMap=${completeMap})`);
   },
 
   // Clear any pre-existing crowns so our clicks build the board from scratch.

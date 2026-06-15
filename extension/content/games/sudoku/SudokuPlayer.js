@@ -43,7 +43,7 @@ const SudokuPlayer = {
     }
   },
 
-  async play(solution, { completeMap, map }) {
+  async play(solution, { completeMap, map, solveSeconds = 0, elapsedAnchor = null }) {
     if (!Array.isArray(solution) || !solution.length) {
       console.warn('[hackTheLink] Sudoku: empty solution, nothing to play');
       return;
@@ -63,22 +63,19 @@ const SudokuPlayer = {
       }
     }
 
-    // completeMap=false stops one digit short, leaving the puzzle unfinished.
-    const targets = completeMap ? toFill : toFill.slice(0, -1);
-
-    let placed = 0;
-    for (const { row, col, value } of targets) {
+    const { placed, total } = await Pacer.play(toFill, { completeMap, solveSeconds, elapsedAnchor }, async ({ row, col, value }) => {
       const idx = row * cols + col;
       const el = this.cellEl(idx);
       if (!el) {
         console.warn(`[hackTheLink] Sudoku: cell ${idx} (r${row},c${col}) not found`);
-        continue;
+        return false;
       }
-      if (await this.setDigit(el, value, pad.get(value))) placed++;
-      else console.warn(`[hackTheLink] Sudoku: could not set cell ${idx} (r${row},c${col}) = ${value}`);
-    }
+      if (await this.setDigit(el, value, pad.get(value))) return true;
+      console.warn(`[hackTheLink] Sudoku: could not set cell ${idx} (r${row},c${col}) = ${value}`);
+      return false;
+    });
 
-    console.log(`[hackTheLink] Sudoku: placed ${placed}/${targets.length} digits (completeMap=${completeMap})`);
+    console.log(`[hackTheLink] Sudoku: placed ${placed}/${total} digits (completeMap=${completeMap})`);
   },
 
   // Click the cell, then the digit button; confirm by reading the cell back.

@@ -155,8 +155,10 @@
   opacity: 0.45;
 }
 
-.solve-time--off .solve-time__warn {
-  display: none;
+/* Keep the warn slot in flow always (visibility, not display) so toggling it
+   never resizes the panel. Higher specificity so "off" wins over danger. */
+.solve-time.solve-time--off .solve-time__warn {
+  visibility: hidden;
 }
 
 .solve-time__slider:disabled,
@@ -197,18 +199,25 @@
   transition: color 0.15s;
 }
 
-.solve-time__input {
-  width: 2ch;
-  min-width: 2ch;
+/* High specificity + explicit values so the host page (LinkedIn) can't override
+   the number's size/colour where this is injected into its DOM. */
+.solve-time .solve-time__value .solve-time__input {
+  width: 3ch;
+  min-width: 3ch;
+  height: auto;
   padding: 0;
+  margin: 0;
   text-align: right;
   font-size: 22px;
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  color: inherit;
+  color: var(--accent);
   background: transparent;
   border: none;
+  box-shadow: none;
+  appearance: none;
+  -webkit-appearance: none;
   -moz-appearance: textfield;
 }
 
@@ -285,4 +294,9 @@
   color: #ff6b6b;
   font-size: 11px;
   font-weight: 600;
+  visibility: hidden;
+}
+
+.solve-time--danger .solve-time__warn {
+  visibility: visible;
 }

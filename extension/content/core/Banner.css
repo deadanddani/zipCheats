@@ -34,6 +34,15 @@
   font-weight: 600;
 }
 
+#hackthelink-banner .htl-banner__clock {
+  margin-top: -4px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 600;
+  color: #9aa6b2;
+  font-variant-numeric: tabular-nums;
+}
+
 #hackthelink-banner .htl-banner__close {
   margin-left: auto;
   background: transparent;

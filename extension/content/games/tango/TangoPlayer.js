@@ -41,7 +41,7 @@ const TangoPlayer = {
     }
   },
 
-  async play(solution, { completeMap, map }) {
+  async play(solution, { completeMap, map, solveSeconds = 0, elapsedAnchor = null }) {
     if (!Array.isArray(solution) || !solution.length) {
       console.warn('[hackTheLink] Tango: empty solution, nothing to play');
       return;
@@ -59,22 +59,19 @@ const TangoPlayer = {
       }
     }
 
-    // completeMap=false stops one symbol short, leaving the puzzle unfinished.
-    const targets = completeMap ? toFill : toFill.slice(0, -1);
-
-    let placed = 0;
-    for (const { row, col, value } of targets) {
+    const { placed, total } = await Pacer.play(toFill, { completeMap, solveSeconds, elapsedAnchor }, async ({ row, col, value }) => {
       const idx = row * cols + col;
       const el = this.cellEl(idx);
       if (!el) {
         console.warn(`[hackTheLink] Tango: cell ${idx} (r${row},c${col}) not found`);
-        continue;
+        return false;
       }
-      if (await this.ensureValue(el, value)) placed++;
-      else console.warn(`[hackTheLink] Tango: could not set cell ${idx} (r${row},c${col})`);
-    }
+      if (await this.ensureValue(el, value)) return true;
+      console.warn(`[hackTheLink] Tango: could not set cell ${idx} (r${row},c${col})`);
+      return false;
+    });
 
-    console.log(`[hackTheLink] Tango: placed ${placed}/${targets.length} symbols (completeMap=${completeMap})`);
+    console.log(`[hackTheLink] Tango: placed ${placed}/${total} symbols (completeMap=${completeMap})`);
   },
 
   // Click the cell until it shows the desired symbol (cycling through states).

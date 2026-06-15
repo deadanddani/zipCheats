@@ -61,13 +61,41 @@ const GameState = {
   },
 
   // Whether the current puzzle is already finished (so there's nothing to solve).
-  isSolved(game) {
+  // `map` is optional: when given it lets the numeric scheme tell a genuinely
+  // finished board apart from one that's merely been *replayed* (see below).
+  isSolved(game, map) {
     const suffix = this.currentSuffix(game);
-    if (!suffix) return false;
+    if (!suffix) {
+      console.log('[hackTheLink][isSolved] no suffix → false', { game: game?.id });
+      return false;
+    }
     if (game.stateScheme === 'urn') {
       const d = this.urnData(suffix);
-      return !!d && this.TERMINAL_STATE.test(String(d.gamePlayState));
+      const solved = !!d && this.TERMINAL_STATE.test(String(d.gamePlayState));
+      console.log('[hackTheLink][isSolved] urn', { suffix, gamePlayState: d?.gamePlayState, solved });
+      return solved;
     }
-    return localStorage.getItem(`play:shareData:(${suffix})`) != null;
+    // shareData lingers through a replay, so also require the live board to look
+    // finished (when the game declares `completion`).
+    const hasShareData = localStorage.getItem(`play:shareData:(${suffix})`) != null;
+    const board = this.boardComplete(game, map);
+    console.log('[hackTheLink][isSolved] numeric', {
+      suffix,
+      hasShareData,
+      hasMap: !!map,
+      boardComplete: board, // null = couldn't tell (no map or no completion spec)
+      solved: hasShareData && board !== false,
+    });
+    if (!hasShareData) return false;
+    return board !== false;
+  },
+
+  // true/false from `completion` metadata, or null when it can't tell.
+  boardComplete(game, map) {
+    const spec = game?.completion;
+    if (!spec || !map) return null;
+    const need = spec.count === 'rows' ? (map.rows ?? 0) : (map.rows ?? 0) * (map.cols ?? 0);
+    if (!need) return null;
+    return document.querySelectorAll(spec.filled).length >= need;
   },
 };

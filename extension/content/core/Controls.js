@@ -24,7 +24,7 @@ const Controls = {
   // global dailies time. 0 is allowed but warns in red — completing instantly can
   // crash the board. The slider caps at SOLVE_TIME_MAX; the field accepts any
   // value. The returned element exposes `setEnabled(on)` to dim/lock it.
-  SOLVE_TIME_MAX: 60,
+  SOLVE_TIME_MAX: 180,
 
   createTimeSlider({ label, get, set }) {
     const max = this.SOLVE_TIME_MAX
@@ -39,20 +39,17 @@ const Controls = {
         </span>
       </div>
       <input type="range" class="solve-time__slider" min="0" max="${max}" step="1" aria-label="${label}" />
-      <small class="solve-time__warn" hidden>⚠ Completing in 0s can crash the board.</small>
+      <small class="solve-time__warn">⚠ Completing in 0s can crash the board.</small>
     `
 
     const input = field.querySelector('.solve-time__input')
     const slider = field.querySelector('.solve-time__slider')
-    const warn = field.querySelector('.solve-time__warn')
 
     const reflect = (n) => {
       input.value = String(n)
       slider.value = String(Math.min(n, max))
       slider.style.setProperty('--fill', `${(Math.min(n, max) / max) * 100}%`)
-      const danger = n <= 0
-      warn.hidden = !danger
-      field.classList.toggle('solve-time--danger', danger)
+      field.classList.toggle('solve-time--danger', n <= 0)
     }
 
     Promise.resolve(get()).then(reflect)

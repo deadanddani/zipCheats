@@ -12,6 +12,7 @@ const Banner = {
         <span class="htl-banner__label">hackTheLink detected a ${game.name}</span>
         <button class="htl-banner__close" type="button" aria-label="Close">✕</button>
       </div>
+      <div class="htl-banner__clock">—</div>
       ${Controls.spoilerMarkup('<div class="game-preview"><canvas class="game-canvas"></canvas></div>')}
       <div class="solve-options">
         <div class="htl-banner__toggle"></div>
@@ -30,6 +31,13 @@ const Banner = {
     Controls.wireSpoiler(banner.querySelector('.game-spoiler'))
     banner.querySelector('.htl-banner__toggle').appendChild(Controls.createCompleteMapToggle())
     banner.querySelector('.htl-banner__solve-time').appendChild(Controls.createSolveTimeControl(game.id))
+
+    const clockEl = banner.querySelector('.htl-banner__clock')
+    const tick = setInterval(() => {
+      if (!banner.isConnected) return clearInterval(tick)
+      const s = typeof LiveClock !== 'undefined' ? LiveClock.seconds() : null
+      clockEl.textContent = s == null ? '—' : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+    }, 250)
 
     const solveBtn = banner.querySelector('.htl-banner__solve')
     if (game.canAutoSolve === false) {
