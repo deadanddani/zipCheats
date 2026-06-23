@@ -34,7 +34,7 @@ const QueensExtractor = {
     // from), so try the DOM first — a string scan, no network. Fall back to a
     // same-origin fetch (e.g. after an SPA navigation that didn't reload).
     try {
-      const puzzle = this.parsePuzzle(document.documentElement.outerHTML)
+      const puzzle = this.parsePuzzle(domPayload())
       console.log('[hackTheLink] Queens: puzzle read from DOM (no fetch)')
       return puzzle
     } catch {}
