@@ -17,6 +17,15 @@ const ZipExtractor = {
   },
 
   async fetchPuzzle() {
+    // The loaded page already embeds the puzzle (it's what the board renders
+    // from), so try the DOM first — a string scan, no network. Fall back to a
+    // same-origin fetch (e.g. after an SPA navigation that didn't reload).
+    try {
+      const puzzle = this.parsePuzzle(document.documentElement.outerHTML)
+      console.log('[hackTheLink] Zip: puzzle read from DOM (no fetch)')
+      return puzzle
+    } catch {}
+    console.log('[hackTheLink] Zip: puzzle not in DOM, fetching endpoint')
     const res = await fetch(this.endpoint, { credentials: 'include' })
     if (!res.ok) throw new Error(`Zip endpoint returned ${res.status}`)
     return this.parsePuzzle(await res.text())

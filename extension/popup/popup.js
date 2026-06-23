@@ -195,10 +195,11 @@ async function wireDailies() {
     if (!first) return;
 
     const tab = await activeTab();
-    // On a games page the content script picks up the run via storage; otherwise
-    // open the first game so a content script is there to drive it.
+    // On a games page the content script picks up the run via storage (it then
+    // navigates to the daily URL itself); otherwise open the first game directly
+    // on its daily URL so a content script is there to drive it.
     if (!tab || !/linkedin\.com\/games\//.test(tab.url ?? "")) {
-      await chrome.tabs.create({ url: first.url });
+      await chrome.tabs.create({ url: DailyRunner.urlFor(first) });
     }
     window.close();
   });

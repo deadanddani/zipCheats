@@ -12,6 +12,14 @@ const DailyRunner = {
   MIN_SECONDS: 0,
   // Let a finished solve register/persist before navigating away.
   SETTLE_MS: 3000,
+  // The dailies flow navigates with this query param so the content script can
+  // tell a run-driven page load apart from a normal one (see main.js isDailyRun).
+  PARAM: 'hackTheLink=2',
+
+  // The URL to navigate to for a game as part of a run.
+  urlFor(game) {
+    return `${game.url}?${this.PARAM}`
+  },
 
   // The list of game ids that take part in a run, in order.
   order() {
@@ -74,6 +82,9 @@ const DailyRunner = {
     if (state.index >= state.order.length) {
       state.finished = true
       state.finishedAt = Date.now()
+      // The run is over: drop active so it stops gating page loads. The overlay
+      // still renders the summary (finished) until the user dismisses it.
+      state.active = false
       await this.write(state)
       DailyOverlay.render(state)
       return
@@ -82,13 +93,15 @@ const DailyRunner = {
     await this.write(state)
     DailyOverlay.render(state)
     const next = GameCatalog.byId(state.order[state.index])
-    if (next) setTimeout(() => (location.href = next.url), this.SETTLE_MS)
+    if (next) setTimeout(() => (location.href = this.urlFor(next)), this.SETTLE_MS)
   },
 
   // Navigate to the game we're supposed to be on (used when a reload lands us
-  // somewhere else, or to start the very first game).
+  // somewhere else, when the param is missing, or to start the very first game).
   gotoExpected(state) {
     const next = GameCatalog.byId(this.expectedId(state))
-    if (next && !location.href.startsWith(next.url)) location.href = next.url
+    if (!next) return
+    const onDailyUrl = location.href.startsWith(next.url) && new URL(location.href).searchParams.get('hackTheLink') === '2'
+    if (!onDailyUrl) location.href = this.urlFor(next)
   },
 }

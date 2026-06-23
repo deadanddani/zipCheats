@@ -15,7 +15,9 @@ const DailyOverlay = {
   },
 
   render(state) {
-    if (!state?.active) return this.hide()
+    // A finished run flips active=false (so it stops gating page loads) but still
+    // shows its summary until dismissed, so render on active *or* finished.
+    if (!state?.active && !state?.finished) return this.hide()
 
     let el = document.getElementById(this.ID)
     if (!el) {

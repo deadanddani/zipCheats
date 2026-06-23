@@ -14,6 +14,12 @@ function autoRunRequested() {
   return new URL(location.href).searchParams.get('hackTheLink') === '1'
 }
 
+// The dailies flow navigates with ?hackTheLink=2 to keep it from colliding with
+// the normal auto-run (=1) and with normal page loads. Captured once at script
+// load — the daily flow does a full reload per game, so each load's URL carries
+// the param, and we don't want a later LinkedIn URL rewrite to drop us mid-run.
+const isDailyRun = new URL(location.href).searchParams.get('hackTheLink') === '2'
+
 // Solve eagerly so the answer is ready before the user clicks "Solve".
 function computeSolution(map) {
   return Promise.resolve().then(() => {
@@ -93,6 +99,7 @@ async function solveForDaily() {
 async function extractMap() {
   const myGame = game
   let data
+  const t0 = performance.now()
   try {
     data = await game.extractor.extract()
   } catch (err) {
@@ -103,7 +110,9 @@ async function extractMap() {
   if (game !== myGame || (detected && detected !== myGame)) return false
   lastMap = data
   chrome.runtime.sendMessage({ type: 'SEND_MAP', data, url: location.href })
-  console.log('[hackTheLink] Map extracted')
+  console.log(
+    `[hackTheLink] Map extracted in ${(performance.now() - t0).toFixed(2)} ms (page t+${performance.now().toFixed(0)} ms)`,
+  )
   solutionPromise = computeSolution(data)
   return true
 }
@@ -118,22 +127,20 @@ function anchorClock() {
 // Normal (non-daily) flow: get the map and show the banner as fast as possible,
 // then anchor the clock in the background once the board appears — the banner is
 // never blocked on the board, only the actual solve (in applySolution) is.
-async function prepareGame() {
-  if (!(await extractMap())) return
+async function prepareGame(extracted) {
+  if (!(await extracted)) return
   if (autoRunRequested()) applySolution()
   else Banner.show({ game, map: lastMap, solution: solutionPromise, onSolve: applySolution })
   pendingWait = waitForElement(game.selector, anchorClock)
 }
 
-// Daily flow: the board is required (we solve into it), so extract, then wait for
-// it to anchor the clock and drive the solve.
-async function onDailyBoardReady() {
+// Daily flow: the board is required (we solve into it), so wait for it, anchor
+// the clock, make sure extraction landed, and drive the solve.
+async function onDailyBoardReady(extracted) {
   anchorClock()
-  if (!lastMap) {
-    if (!(await extractMap())) {
-      await DailyRunner.advance('error', 'extraction failed')
-      return
-    }
+  if (!(await extracted)) {
+    await DailyRunner.advance('error', 'extraction failed')
+    return
   }
   solveForDaily()
 }
@@ -212,53 +219,74 @@ async function startGame() {
   if (!isContextAlive()) return shutdown()
   resetSession()
   game = GameRegistry.detect()
+  // Kick off extraction right away — it's the slow step (reads the puzzle from
+  // the page) and needs nothing from storage, so run it in parallel with the
+  // DailyRunner read below instead of waiting on it. Every branch reuses this one
+  // promise rather than extracting again.
+  const extracted = game ? extractMap() : Promise.resolve(false)
   dailyState = await DailyRunner.read()
 
-  // A dailies run is in progress: the overlay persists and we drive this game.
-  if (dailyState?.active) {
-    DailyOverlay.render(dailyState)
-    if (dailyState.finished) return
+  // Dailies are gated on the ?hackTheLink=2 URL (not just storage), so a finished
+  // or stale run can never hijack a normal page load.
+  if (isDailyRun) {
+    if (dailyState?.active) {
+      DailyOverlay.render(dailyState)
 
-    const expectedId = DailyRunner.expectedId(dailyState)
-    if (!game || game.id !== expectedId) {
-      DailyRunner.gotoExpected(dailyState)
+      const expectedId = DailyRunner.expectedId(dailyState)
+      if (!game || game.id !== expectedId) {
+        DailyRunner.gotoExpected(dailyState)
+        return
+      }
+      // NB: don't decide "already solved" here — at this point the board hasn't
+      // loaded and today's localStorage keys may not be written yet, so isSolved
+      // (with no map) can false-positive on yesterday's solved puzzle. solveForDaily
+      // re-checks with the live board+map once the board is ready, and skips then.
+      // Mark it active in the overlay, then wait for the board to solve it. A
+      // watchdog fails the game if its board never shows so the run can't stall.
+      dailyState.statuses[expectedId] = 'solving'
+      await DailyRunner.write(dailyState)
+      DailyOverlay.render(dailyState)
+      dailyWatchdog = setTimeout(() => DailyRunner.advance('error', 'board did not load'), 40000)
+      pendingWait = waitForElement(game.selector, () => onDailyBoardReady(extracted))
       return
     }
-    // NB: don't decide "already solved" here — at this point the board hasn't
-    // loaded and today's localStorage keys may not be written yet, so isSolved
-    // (with no map) can false-positive on yesterday's solved puzzle. solveForDaily
-    // re-checks with the live board+map once the board is ready, and skips then.
-    // Mark it active in the overlay, then wait for the board to solve it. A
-    // watchdog fails the game if its board never shows so the run can't stall.
-    dailyState.statuses[expectedId] = 'solving'
-    await DailyRunner.write(dailyState)
-    DailyOverlay.render(dailyState)
-    dailyWatchdog = setTimeout(() => DailyRunner.advance('error', 'board did not load'), 40000)
-    extractMap() // start the fetch now; the board-ready handler reuses the result
-    pendingWait = waitForElement(game.selector, onDailyBoardReady)
-    return
+    if (dailyState?.finished) {
+      DailyOverlay.render(dailyState) // run already done: just show the summary
+      return
+    }
+    // Reached a daily URL with no run in progress — tell the user and fall through
+    // to the normal flow so the page is still usable.
+    Toast.show('No hay una ejecución de dailies activa.')
   }
 
   DailyOverlay.hide()
   if (game) {
-    console.log(`[hackTheLink] ${game.name}: extracting "${game.name}"...`)
-    prepareGame()
+    prepareGame(extracted)
   } else {
     console.log('[hackTheLink] No game configured for this URL')
   }
 }
 
-// React only to the run starting (kick off if we're already on a game page) or
+// React to the run starting (navigate to the first game's daily URL so the
+// param-gated flow engages, even if we're already on a game page) and to it
+// ending — either finishing (active flips false but we keep the summary) or
 // being cancelled (tear the overlay down). Per-game advances keep active=true
 // and are handled by the navigation flow, so they're ignored here.
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local' || !changes[DailyRunner.KEY]) return
+  const newV = changes[DailyRunner.KEY].newValue
   const wasActive = !!changes[DailyRunner.KEY].oldValue?.active
-  const nowActive = !!changes[DailyRunner.KEY].newValue?.active
-  if (!wasActive && nowActive) startGame()
-  else if (wasActive && !nowActive) {
-    dailyState = null
-    DailyOverlay.hide()
+  const nowActive = !!newV?.active
+  if (!wasActive && nowActive) {
+    DailyRunner.gotoExpected(newV)
+  } else if (wasActive && !nowActive) {
+    if (newV?.finished) {
+      dailyState = newV
+      DailyOverlay.render(newV) // run finished: keep showing the summary
+    } else {
+      dailyState = null
+      DailyOverlay.hide() // run cancelled
+    }
   }
 })
 
