@@ -302,7 +302,16 @@ function onLocationMaybeChanged() {
   // instead of tearing it down, so we still catch the board when it appears. If we
   // reset here, the wait dies and the board renders to nobody — no popup until a
   // full reload lands directly on /games/<id>/.
-  if (!GameRegistry.detect()) return
+  if (!GameRegistry.detect()) {
+    // We've left the games area (e.g. /feed) — drop our injected UI so it doesn't
+    // linger over the rest of LinkedIn. The board wait stays alive on purpose; if
+    // this turns out to be a transient /preload/ that settles back onto the game,
+    // startGame re-shows the banner. The overlay belongs to a daily run (driven by
+    // full reloads) so we leave it for DailyOverlay to manage.
+    document.getElementById('hackthelink-banner')?.remove()
+    document.getElementById('hackthelink-toast')?.remove()
+    return
+  }
   startGame()
 }
 
