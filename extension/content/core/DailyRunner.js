@@ -9,9 +9,9 @@
 const DailyRunner = {
   KEY: 'htlDaily',
   // Floor so we never complete at ~0s, which can crash LinkedIn's board.
-  MIN_SECONDS: 1,
+  MIN_SECONDS: 0,
   // Let a finished solve register/persist before navigating away.
-  SETTLE_MS: 900,
+  SETTLE_MS: 3000,
 
   // The list of game ids that take part in a run, in order.
   order() {

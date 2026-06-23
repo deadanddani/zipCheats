@@ -2,6 +2,20 @@
 // returns the queen positions as [{ row, col }].
 const QueensSolver = {
   solve(map) {
+    // LinkedIn ships the queen positions ([{row,col}]) in the payload, in the
+    // exact format the player consumes, so prefer them and skip the DFS. Guard
+    // that every entry is a {row,col} (the extractor may yield raw indices).
+    const shipped = map?.solution;
+    if (
+      Array.isArray(shipped) &&
+      shipped.length &&
+      shipped.every((q) => Number.isInteger(q?.row) && Number.isInteger(q?.col))
+    ) {
+      const solution = [...shipped].sort((a, b) => a.row - b.row);
+      console.log('[hackTheLink] QueensSolver: using LinkedIn solution ✔', solution);
+      return solution;
+    }
+
     const grid = map?.grid;
     if (!Array.isArray(grid) || !grid.length) {
       console.warn('[hackTheLink] QueensSolver: empty/invalid grid');

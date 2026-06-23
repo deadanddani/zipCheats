@@ -44,16 +44,15 @@ const ZipPlayer = {
   },
 
   // completeMap=false stops one move short so the puzzle is drawn but not finished.
-  async play(solution, { completeMap, map, solveSeconds = 0, elapsedAnchor = null, timerStartsOnClick = false }) {
+  async play(solution, { completeMap, map, solveSeconds = 0, elapsedAnchor = null }) {
     const path = solution;
     const cols = map.cols;
-    const cells = completeMap ? path : path.slice(0, -1);
-    if (cells.length < 2) {
+    if (path.length < 2) {
       console.warn("[hackTheLink] Path too short to play");
       return;
     }
 
-    const start = this.cellEl(cells[0]);
+    const start = this.cellEl(path[0]);
     if (!start) {
       console.warn("[hackTheLink] Could not find start cell");
       return;
@@ -68,37 +67,30 @@ const ZipPlayer = {
 
     start.focus();
 
-    // The anchor from onMapReady assumes the clock runs from puzzle load. For a
-    // game whose timer only starts on the first move, and only when LinkedIn's
-    // clock is still 0 (a fresh puzzle — a resumed one keeps counting anyway),
-    // re-anchor to now: the first keypress below is what actually starts it.
-    let anchor = elapsedAnchor;
-    if (timerStartsOnClick && (anchor?.base ?? 0) <= 0) {
-      anchor = { at: Date.now(), base: 0 };
-    }
+    // One "move" per arrow press, from one cell to the next. Pacer drives the
+    // ordering, drops the last move when !completeMap, and holds the final move
+    // until LinkedIn's clock reaches solveSeconds.
+    const steps = [];
+    for (let i = 1; i < path.length; i++) steps.push({ from: path[i - 1], to: path[i] });
 
-    for (let i = 1; i < cells.length; i++) {
-      const dr = Math.floor(cells[i] / cols) - Math.floor(cells[i - 1] / cols);
-      const dc = (cells[i] % cols) - (cells[i - 1] % cols);
+    const { placed, total } = await Pacer.play(steps, { completeMap, solveSeconds, elapsedAnchor }, async ({ from, to }) => {
+      const dr = Math.floor(to / cols) - Math.floor(from / cols);
+      const dc = (to % cols) - (from % cols);
       const spec = this.KEY[`${dr},${dc}`];
       if (!spec) {
-        console.warn(`[hackTheLink] Non-adjacent step ${i} (d=${dr},${dc})`);
-        continue;
-      }
-      // When actually finishing, hold the last (completing) move until the
-      // game's clock reaches the configured time, so LinkedIn records ~that.
-      if (completeMap && i === cells.length - 1) {
-        await LiveClock.waitUntilElapsed(solveSeconds);
+        console.warn(`[hackTheLink] Non-adjacent step (d=${dr},${dc})`);
+        return false;
       }
       // re-focus the current head each step: the game moves focus to the newly
       // connected cell, and targeting it keeps the next arrow acting on the head.
-      const head = this.cellEl(cells[i - 1]);
+      const head = this.cellEl(from);
       const target = head && document.activeElement !== head ? (head.focus(), head) : (document.activeElement ?? grid);
       this.fireKey(target, spec);
-      await this.waitForMove(this.cellEl(cells[i]));
-    }
+      await this.waitForMove(this.cellEl(to));
+      return true;
+    });
 
-    console.log(`[hackTheLink] Played ${cells.length}/${path.length} cells via keyboard (completeMap=${completeMap})`);
+    console.log(`[hackTheLink] Played ${placed}/${total} moves via keyboard (completeMap=${completeMap})`);
   },
 
   // Resolve as soon as the move lands (destination joined the trail or took
