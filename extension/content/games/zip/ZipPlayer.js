@@ -88,7 +88,7 @@ const ZipPlayer = {
       // When actually finishing, hold the last (completing) move until the
       // game's clock reaches the configured time, so LinkedIn records ~that.
       if (completeMap && i === cells.length - 1) {
-        await LiveClock.waitUntilElapsed(solveSeconds, anchor);
+        await LiveClock.waitUntilElapsed(solveSeconds);
       }
       // re-focus the current head each step: the game moves focus to the newly
       // connected cell, and targeting it keeps the next arrow acting on the head.

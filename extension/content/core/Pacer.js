@@ -7,7 +7,7 @@ const Pacer = {
     let placed = 0;
     for (let i = 0; i < list.length; i++) {
       if (completeMap && i === list.length - 1) {
-        await LiveClock.waitUntilElapsed(solveSeconds, elapsedAnchor);
+        await LiveClock.waitUntilElapsed(solveSeconds);
       }
       if ((await place(list[i], i)) !== false) placed++;
     }
